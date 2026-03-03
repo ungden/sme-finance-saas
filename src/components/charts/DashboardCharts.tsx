@@ -3,7 +3,7 @@
 import React from "react";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    LineChart, Line, ComposedChart, Area
+    ComposedChart, Line
 } from "recharts";
 
 export default function DashboardCharts({ yearsData }: { yearsData: any[] }) {

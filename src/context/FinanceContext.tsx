@@ -143,24 +143,20 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         const extraMonthlyOpex = totalMonthlySalary + totalMonthlyRent;
         const extraAnnualOpex = extraMonthlyOpex * 12;
 
-        // Note: For MVP Phase 2, we just override operatingExpenses to equal (HR + Rent).
-        // If users typed custom opex in the grid, it will be overridden by the ERP modules 
-        // if they are actively using them. Better approach is to separate `baseOpex` and `erpOpex`
-        // but for this MVP, we will inject the calculation directly.
+        // Guard: Only update if the value actually changed to prevent infinite loop
+        const currentOpex = proj.yearsData.length > 0 ? proj.yearsData[0].operatingExpenses : -1;
+        const hasErpItems = ((proj.employees?.length || 0) + (proj.facilities?.length || 0)) > 0;
+        if (!hasErpItems || currentOpex === extraAnnualOpex) return;
+
         setProjects(prev => prev.map(p => {
             if (p.id !== currentProjectId) return p;
-
-            // Should we update OPEX? Only if there are ERP items.
-            if ((p.employees && p.employees.length > 0) || (p.facilities && p.facilities.length > 0)) {
-                return {
-                    ...p,
-                    yearsData: p.yearsData.map(y => ({
-                        ...y,
-                        operatingExpenses: extraAnnualOpex // Override
-                    }))
-                };
-            }
-            return p;
+            return {
+                ...p,
+                yearsData: p.yearsData.map(y => ({
+                    ...y,
+                    operatingExpenses: extraAnnualOpex
+                }))
+            };
         }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [employees, facilities]);

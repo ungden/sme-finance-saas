@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { DollarSign, Landmark, TrendingUp, AlertTriangle, Building2, Wallet, Download, CheckCircle2, Info, Lightbulb } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
-import DashboardCharts from "@/components/charts/DashboardCharts";
 import { generateInsights, InsightItem } from "@/utils/ai-insights";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+
+const DashboardCharts = dynamic(() => import("@/components/charts/DashboardCharts"), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-slate-100 rounded-2xl animate-pulse" />,
+});
 
 export default function DashboardPage() {
   const { yearsData, isLoaded, formatVND } = useFinance();
@@ -17,7 +20,7 @@ export default function DashboardPage() {
   if (!isLoaded) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full border-b-2 border-blue-600 h-8 w-8"></div></div>;
 
   if (yearsData.length === 0) {
-    return <div className="p-8 text-slate-500">Chưa có dữ liệu dự án. Vùi lòng tạo Kế hoạch mới.</div>;
+    return <div className="p-8 text-slate-500">Chưa có dữ liệu dự án. Vui lòng tạo Kế hoạch mới.</div>;
   }
 
   const exportToPDF = async () => {
@@ -28,6 +31,9 @@ export default function DashboardPage() {
       // Temporarily hide the export button during capture
       const exportBtn = document.getElementById('export-btn');
       if (exportBtn) exportBtn.style.display = 'none';
+
+      const html2canvas = (await import("html2canvas")).default;
+      const { default: jsPDF } = await import("jspdf");
 
       const canvas = await html2canvas(dashboardRef.current, {
         scale: 2, // High resolution

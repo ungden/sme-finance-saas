@@ -41,12 +41,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-sm">
                             <Landmark className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-lg font-bold tracking-tight text-slate-900">SME Finance</span>
+                        <span className="text-lg font-bold tracking-tight text-slate-900">RealProfit</span>
                     </Link>
 
                     {/* Right spacer for symmetrical navbar */}
                     <div className="hidden sm:flex items-center space-x-3 text-sm text-slate-500 font-medium">
-                        SaaS Mode
+                        Mini-ERP for SME
                     </div>
                 </div>
             </header>

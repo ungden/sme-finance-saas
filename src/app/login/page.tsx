@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                         <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-sm">
                             <Landmark className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-2xl font-bold tracking-tight text-slate-900">SME Finance</span>
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">RealProfit</span>
                     </a>
                 </div>
 

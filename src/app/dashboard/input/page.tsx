@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Plus, Save, CalendarDays, DollarSign, Building2, Users, Building, ExternalLink } from "lucide-react";
+import { Plus, Save, CalendarDays, DollarSign, Building2, Users, Building } from "lucide-react";
 import { useFinance, YearData } from "@/context/FinanceContext";
 
 export default function InputPage() {
