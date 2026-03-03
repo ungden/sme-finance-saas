@@ -1,13 +1,16 @@
 "use client";
 
 import React from "react";
-import { Plus, Save, CalendarDays, DollarSign, Building2 } from "lucide-react";
+import Link from "next/link";
+import { Plus, Save, CalendarDays, DollarSign, Building2, Users, Building, ExternalLink } from "lucide-react";
 import { useFinance, YearData } from "@/context/FinanceContext";
 
 export default function InputPage() {
-    const { yearsData, isLoaded, updateYearData, addYear, formatVND } = useFinance();
+    const { yearsData, employees, facilities, isLoaded, updateYearData, addYear, formatVND } = useFinance();
 
     if (!isLoaded) return <div className="p-8"><div className="animate-pulse flex space-x-4"><div className="rounded-full bg-slate-200 h-10 w-10"></div><div className="flex-1 space-y-6 py-1"><div className="h-2 bg-slate-200 rounded"></div><div className="space-y-3"><div className="grid grid-cols-3 gap-4"><div className="h-2 bg-slate-200 rounded col-span-2"></div><div className="h-2 bg-slate-200 rounded col-span-1"></div></div><div className="h-2 bg-slate-200 rounded"></div></div></div></div></div>;
+
+    const hasErpData = employees.length > 0 || facilities.length > 0;
 
     const handleAddYear = () => {
         if (yearsData.length === 0) {
@@ -59,7 +62,41 @@ export default function InputPage() {
                             </tr>
                             <InputRow label="Doanh thu thuần" field="revenue" yearsData={yearsData} update={updateYearData} />
                             <InputRow label="Giá vốn hàng bán (COGS)" field="cogs" yearsData={yearsData} update={updateYearData} negative />
-                            <InputRow label="Chi phí vận hành (OPEX)" field="operatingExpenses" yearsData={yearsData} update={updateYearData} negative />
+
+                            {/* OPEX Row with ERP Links */}
+                            <tr className={`hover:bg-slate-50 transition-colors group ${hasErpData ? "bg-amber-50/30" : ""}`}>
+                                <td className="px-4 py-2.5 font-medium text-slate-700 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-100 transition-colors flex flex-col items-start gap-2">
+                                    <span>Chi phí vận hành (OPEX)</span>
+                                    <div className="flex gap-2">
+                                        <Link href="/dashboard/hr" className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-200 hover:bg-blue-100 transition">
+                                            <Users className="w-3 h-3" /> Nhân sự {employees.length > 0 && `(${employees.length})`}
+                                        </Link>
+                                        <Link href="/dashboard/facilities" className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-md border border-indigo-200 hover:bg-indigo-100 transition">
+                                            <Building className="w-3 h-3" /> Chi nhánh {facilities.length > 0 && `(${facilities.length})`}
+                                        </Link>
+                                    </div>
+                                    {hasErpData && (
+                                        <span className="text-[10px] text-amber-600 block mt-1 italic">
+                                            * Đang được đồng bộ tự động từ Module Quản trị.
+                                        </span>
+                                    )}
+                                </td>
+                                {yearsData.map(y => (
+                                    <td key={y.id} className="px-3 py-1.5 align-middle">
+                                        {hasErpData ? (
+                                            <div className="w-full px-3 py-1.5 border border-amber-200 bg-amber-50 rounded-md text-right tabular-nums text-sm font-bold text-amber-700">
+                                                - {new Intl.NumberFormat("vi-VN").format(y.operatingExpenses)}
+                                            </div>
+                                        ) : (
+                                            <NumberInput
+                                                value={y.operatingExpenses}
+                                                onChange={(num) => updateYearData(y.year, "operatingExpenses", num)}
+                                                negative={true}
+                                            />
+                                        )}
+                                    </td>
+                                ))}
+                            </tr>
                             <InputRow label="Khấu hao" field="depreciation" yearsData={yearsData} update={updateYearData} negative />
                             <InputRow label="Chi phí lãi vay" field="interestExpense" yearsData={yearsData} update={updateYearData} negative />
                             <InputRow label="Thuế TNDN" field="taxes" yearsData={yearsData} update={updateYearData} negative />

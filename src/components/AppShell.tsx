@@ -3,13 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync } from "lucide-react";
+import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync, Users, Building } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { createClient } from "@/utils/supabase/client";
 
 const NAV_ITEMS = [
     { href: "/dashboard", label: "Tổng Quan", icon: LayoutDashboard, exact: true },
     { href: "/dashboard/input", label: "Nhập Liệu", icon: BookOpen, exact: false },
+    { href: "/dashboard/hr", label: "Nhân Sự", icon: Users, exact: false },
+    { href: "/dashboard/facilities", label: "Mặt Bằng", icon: Building, exact: false },
     { href: "/dashboard/boe", label: "BOE Simulator", icon: TrendingUp, exact: false },
 ];
 

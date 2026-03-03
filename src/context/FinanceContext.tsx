@@ -4,6 +4,22 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 // ── Types ──────────────────────────────────────────────
 
+export interface Employee {
+    id: string;
+    name: string;
+    role: string;
+    monthlySalary: number;
+    startDate: string; // YYYY-MM
+}
+
+export interface Facility {
+    id: string;
+    name: string;
+    monthlyRent: number;
+    fireSafetyValid: boolean;
+    contractEnd: string; // YYYY-MM
+}
+
 export interface YearData {
     id: string; // Typically just the year as string
     year: number;
@@ -36,6 +52,8 @@ export interface Project {
     id: string;
     name: string;
     yearsData: YearData[];
+    employees?: Employee[];
+    facilities?: Facility[];
     createdAt: number;
 }
 
@@ -62,6 +80,8 @@ interface FinanceContextType {
     projects: Project[];
     currentProjectId: string | null;
     yearsData: YearData[]; // Derived from current project
+    employees: Employee[]; // Derived from current project
+    facilities: Facility[]; // Derived from current project
     isLoaded: boolean;
 
     // Data Entry Actions
@@ -73,6 +93,11 @@ interface FinanceContextType {
     switchProject: (id: string) => void;
     renameProject: (id: string, newName: string) => void;
     deleteProject: (id: string) => void;
+    // ERP Management
+    addEmployee: (employee: Omit<Employee, "id">) => void;
+    deleteEmployee: (id: string) => void;
+    addFacility: (facility: Omit<Facility, "id">) => void;
+    deleteFacility: (id: string) => void;
 
     // Formatting
     formatVND: (val: number) => string;
@@ -95,6 +120,50 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     const yearsData = React.useMemo(() => {
         return projects.find(p => p.id === currentProjectId)?.yearsData || [];
     }, [projects, currentProjectId]);
+
+    const employees = React.useMemo(() => {
+        return projects.find(p => p.id === currentProjectId)?.employees || [];
+    }, [projects, currentProjectId]);
+
+    const facilities = React.useMemo(() => {
+        return projects.find(p => p.id === currentProjectId)?.facilities || [];
+    }, [projects, currentProjectId]);
+
+    // Internal hook to auto-sync HR & Facility costs to OPEX whenever they change,
+    // assuming uniform cost for simplicity across all years for MVP
+    useEffect(() => {
+        if (!currentProjectId || !isLoaded) return;
+
+        const proj = projects.find(p => p.id === currentProjectId);
+        if (!proj) return;
+
+        const totalMonthlySalary = (proj.employees || []).reduce((sum, e) => sum + e.monthlySalary, 0);
+        const totalMonthlyRent = (proj.facilities || []).reduce((sum, f) => sum + f.monthlyRent, 0);
+
+        const extraMonthlyOpex = totalMonthlySalary + totalMonthlyRent;
+        const extraAnnualOpex = extraMonthlyOpex * 12;
+
+        // Note: For MVP Phase 2, we just override operatingExpenses to equal (HR + Rent).
+        // If users typed custom opex in the grid, it will be overridden by the ERP modules 
+        // if they are actively using them. Better approach is to separate `baseOpex` and `erpOpex`
+        // but for this MVP, we will inject the calculation directly.
+        setProjects(prev => prev.map(p => {
+            if (p.id !== currentProjectId) return p;
+
+            // Should we update OPEX? Only if there are ERP items.
+            if ((p.employees && p.employees.length > 0) || (p.facilities && p.facilities.length > 0)) {
+                return {
+                    ...p,
+                    yearsData: p.yearsData.map(y => ({
+                        ...y,
+                        operatingExpenses: extraAnnualOpex // Override
+                    }))
+                };
+            }
+            return p;
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [employees, facilities]);
 
     useEffect(() => {
         const savedProjects = localStorage.getItem("sme_finance_projects_v2");
@@ -165,6 +234,45 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         }));
     };
 
+    // ── ERP Actions ────────────────────────────────
+    const addEmployee = (employee: Omit<Employee, "id">) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                const newEmp = { ...employee, id: Date.now().toString() + Math.random().toString(36).slice(2) };
+                return { ...p, employees: [...(p.employees || []), newEmp] };
+            }
+            return p;
+        }));
+    };
+
+    const deleteEmployee = (id: string) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                return { ...p, employees: (p.employees || []).filter(e => e.id !== id) };
+            }
+            return p;
+        }));
+    };
+
+    const addFacility = (facility: Omit<Facility, "id">) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                const newFac = { ...facility, id: Date.now().toString() + Math.random().toString(36).slice(2) };
+                return { ...p, facilities: [...(p.facilities || []), newFac] };
+            }
+            return p;
+        }));
+    };
+
+    const deleteFacility = (id: string) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                return { ...p, facilities: (p.facilities || []).filter(f => f.id !== id) };
+            }
+            return p;
+        }));
+    };
+
     // ── Project Management Actions ─────────────────
     const createProject = (name: string, initialYears: YearData[] = DEFAULT_YEARS) => {
         const newId = Date.now().toString() + Math.random().toString(36).slice(2);
@@ -199,9 +307,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
     return (
         <FinanceContext.Provider value={{
-            projects, currentProjectId, yearsData, isLoaded,
+            projects, currentProjectId, yearsData, employees, facilities, isLoaded,
             updateYearData, addYear, formatVND,
-            createProject, switchProject, renameProject, deleteProject
+            createProject, switchProject, renameProject, deleteProject,
+            addEmployee, deleteEmployee, addFacility, deleteFacility
         }}>
             {children}
         </FinanceContext.Provider>
