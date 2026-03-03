@@ -9,14 +9,14 @@ import { createClient } from "@/utils/supabase/client";
 
 const NAV_ITEMS = [
     { href: "/dashboard", label: "Tổng Quan", icon: LayoutDashboard, exact: true },
-    { href: "/dashboard/transactions", label: "Giao Dịch", icon: BookOpen, exact: false },
+    { href: "/dashboard/input", label: "Nhập Liệu", icon: BookOpen, exact: false },
     { href: "/dashboard/boe", label: "BOE Simulator", icon: TrendingUp, exact: false },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const { financialData, formatVND, isLoaded, projects, currentProjectId, switchProject, createProject } = useFinance();
+    const { isLoaded, projects, currentProjectId, switchProject, createProject } = useFinance();
 
     const handleLogout = async () => {
         const supabase = createClient();
@@ -42,21 +42,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         <span className="text-lg font-bold tracking-tight text-slate-900">SME Finance</span>
                     </Link>
 
-                    {/* Live KPI pills */}
-                    <div className="hidden sm:flex items-center space-x-3">
-                        {isLoaded ? (
-                            <>
-                                <KPIPill label="Lợi nhuận" value={formatVND(financialData.incomeStatement.netIncome)} color={financialData.incomeStatement.netIncome >= 0 ? "text-green-600" : "text-red-600"} />
-                                <KPIPill label="Tiền mặt" value={formatVND(financialData.balanceSheet.assets.cash)} color="text-blue-600" />
-                                <KPIPill label="Tổng TS" value={formatVND(financialData.balanceSheet.assets.totalAssets)} color="text-slate-800" />
-                            </>
-                        ) : (
-                            <>
-                                <div className="h-8 w-32 bg-slate-100 rounded-full animate-pulse" />
-                                <div className="h-8 w-28 bg-slate-100 rounded-full animate-pulse" />
-                                <div className="h-8 w-28 bg-slate-100 rounded-full animate-pulse" />
-                            </>
-                        )}
+                    {/* Right spacer for symmetrical navbar */}
+                    <div className="hidden sm:flex items-center space-x-3 text-sm text-slate-500 font-medium">
+                        SaaS Mode
                     </div>
                 </div>
             </header>
@@ -148,15 +136,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                 </main>
             </div>
-        </div>
-    );
-}
-
-function KPIPill({ label, value, color }: { label: string; value: string; color: string }) {
-    return (
-        <div className="bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-full flex items-center space-x-2">
-            <span className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">{label}</span>
-            <span className={`text-sm font-bold ${color}`}>{value}</span>
         </div>
     );
 }

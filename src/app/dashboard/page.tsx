@@ -1,231 +1,259 @@
 "use client";
 
 import React from "react";
-import { useFinance } from "@/context/FinanceContext";
-import { TrendingUp, TrendingDown, Layers, Wallet, CheckCircle, AlertTriangle, DollarSign, ArrowUpRight, ArrowDownRight, BarChart2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { DollarSign, Landmark, TrendingUp, AlertTriangle, Building2, Wallet } from "lucide-react";
+import { useFinance, YearData } from "@/context/FinanceContext";
 
 export default function DashboardPage() {
-  const { financialData: d, formatVND, transactions } = useFinance();
+  const { yearsData, isLoaded, formatVND } = useFinance();
 
-  const isBalanced =
-    d.balanceSheet.assets.totalAssets ===
-    d.balanceSheet.liabilities.totalLiabilities + d.balanceSheet.equity.totalEquity;
+  if (!isLoaded) return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full border-b-2 border-blue-600 h-8 w-8"></div></div>;
 
-  const profitMargin = d.incomeStatement.revenue > 0
-    ? ((d.incomeStatement.netIncome / d.incomeStatement.revenue) * 100).toFixed(1)
-    : "0.0";
+  if (yearsData.length === 0) {
+    return <div className="p-8 text-slate-500">Chưa có dữ liệu dự án. Vùi lòng tạo Kế hoạch mới.</div>;
+  }
 
-  // Aggregate data for chart
-  const monthlyData = React.useMemo(() => {
-    const agg = transactions.reduce((acc, tx) => {
-      let mYear = "Unknown";
-      if (tx.date.includes("/")) {
-        const parts = tx.date.split("/");
-        // Handle both D/M/YYYY and DD/MM/YYYY
-        mYear = `${parts[1]}/${parts[2]}`;
+  // Prepare derived calculations for all years
+  const derivedYears = yearsData.map((y, index) => {
+    const prevY = index > 0 ? yearsData[index - 1] : null;
+
+    // Income Statement
+    const grossProfit = y.revenue - y.cogs;
+    const ebitda = grossProfit - y.operatingExpenses;
+    const ebit = ebitda - y.depreciation;
+    const ebt = ebit - y.interestExpense;
+    const netIncome = ebt - y.taxes;
+
+    // Balance Sheet
+    const currentAssets = y.cash + y.accountsReceivable + y.inventory;
+    const totalAssets = currentAssets + y.propertyPlantEquipment;
+
+    const currentLiabilities = y.accountsPayable + y.shortTermDebt;
+    const totalLiabilities = currentLiabilities + y.longTermDebt;
+
+    const startRetainedEarnings = prevY ? (prevY as any)._calculated.retainedEarnings : 0;
+    const retainedEarnings = startRetainedEarnings + netIncome;
+    const totalEquity = y.ownerCapital + retainedEarnings;
+
+    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+    const isBalanced = totalAssets === totalLiabilitiesAndEquity;
+
+    // Cash Flow Statement (Simplified Indirect Method)
+    let opsCF = 0, invCF = 0, finCF = 0, netCashFlow = 0;
+
+    if (prevY) {
+      const deltaAR = y.accountsReceivable - prevY.accountsReceivable;
+      const deltaInv = y.inventory - prevY.inventory;
+      const deltaAP = y.accountsPayable - prevY.accountsPayable;
+      const deltaWC = deltaAR + deltaInv - deltaAP;
+
+      opsCF = netIncome + y.depreciation - deltaWC;
+
+      // CapEx = change in PPE + depreciation
+      const capex = (y.propertyPlantEquipment - prevY.propertyPlantEquipment) + y.depreciation;
+      invCF = -capex;
+
+      const deltaDebt = (y.shortTermDebt - prevY.shortTermDebt) + (y.longTermDebt - prevY.longTermDebt);
+      const deltaCapital = y.ownerCapital - prevY.ownerCapital;
+      finCF = deltaDebt + deltaCapital;
+
+      netCashFlow = opsCF + invCF + finCF;
+    } else {
+      // First year (assume starting from 0)
+      opsCF = netIncome + y.depreciation - (y.accountsReceivable + y.inventory - y.accountsPayable);
+      const capex = y.propertyPlantEquipment + y.depreciation;
+      invCF = -capex;
+      finCF = y.shortTermDebt + y.longTermDebt + y.ownerCapital;
+      netCashFlow = opsCF + invCF + finCF;
+    }
+
+    return {
+      ...y,
+      _calculated: {
+        grossProfit, ebitda, ebit, ebt, netIncome,
+        currentAssets, totalAssets, currentLiabilities, totalLiabilities, retainedEarnings, totalEquity, totalLiabilitiesAndEquity, isBalanced,
+        opsCF, invCF, finCF, netCashFlow
       }
-      if (!acc[mYear]) acc[mYear] = { name: mYear, DoanhThu: 0, ChiPhi: 0 };
+    };
+  });
 
-      if (tx.type.startsWith("SALE_")) acc[mYear].DoanhThu += tx.amount;
-      if (tx.type.startsWith("EXPENSE_") || tx.type === "DEPRECIATION") acc[mYear].ChiPhi += tx.amount;
+  const currentYearData = derivedYears[derivedYears.length - 1];
 
-      return acc;
-    }, {} as Record<string, { name: string; DoanhThu: number; ChiPhi: number }>);
+  return (
+    <div className="space-y-6 max-w-screen-2xl mx-auto pb-20">
+      {/* ── KPI HIGHLIGHTS ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard title="Lợi nhuận ròng (Năm cuối)" value={formatVND(currentYearData._calculated.netIncome)} icon={<TrendingUp className="w-5 h-5" />} colorClass={currentYearData._calculated.netIncome >= 0 ? "text-green-700 bg-green-50 border-green-200" : "text-red-700 bg-red-50 border-red-200"} />
+        <KPICard title="Tổng Tài sản" value={formatVND(currentYearData._calculated.totalAssets)} icon={<Building2 className="w-5 h-5" />} colorClass="text-blue-700 bg-blue-50 border-blue-200" />
+        <KPICard title="Lưu chuyển tiền thuần" value={formatVND(currentYearData._calculated.netCashFlow)} icon={<Wallet className="w-5 h-5" />} colorClass="text-teal-700 bg-teal-50 border-teal-200" />
+        <KPICard title="Tiền mặt hiện tại" value={formatVND(currentYearData.cash)} icon={<DollarSign className="w-5 h-5" />} colorClass="text-indigo-700 bg-indigo-50 border-indigo-200" />
+      </div>
 
-    return Object.values(agg).reverse(); // Chronological order
-  }, [transactions]);
-
-  // Custom Tooltip for Chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border border-slate-200 shadow-md rounded-xl text-sm">
-          <p className="font-bold text-slate-800 mb-2">Tháng {label}</p>
-          <div className="space-y-1">
-            <p className="text-blue-600 font-semibold">Doanh thu: {formatVND(payload[0].value)}</p>
-            <p className="text-red-500 font-semibold">Chi phí: {formatVND(payload[1].value)}</p>
+      {/* BALANCE WARNING */}
+      {!currentYearData._calculated.isBalanced && (
+        <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-xl flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0" />
+          <div className="text-sm font-medium">
+            Cảnh báo: Bảng Cân đối Kế toán năm cuối không cân (Tổng TS = {formatVND(currentYearData._calculated.totalAssets)} khác Tổng Nguồn Vốn = {formatVND(currentYearData._calculated.totalLiabilitiesAndEquity)}). Chênh lệch: {formatVND(Math.abs(currentYearData._calculated.totalAssets - currentYearData._calculated.totalLiabilitiesAndEquity))}. Vui lòng kiểm tra lại số liệu Nhập.
           </div>
         </div>
-      );
-    }
-    return null;
+      )}
+
+      {/* ── 3 FINANCIAL STATEMENTS ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+
+        {/* 1. INCOME STATEMENT */}
+        <div className="bg-white border md:col-span-1 xl:col-span-2 border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-blue-600 px-5 py-3 text-white font-bold flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" /> Báo cáo Kết quả Kinh doanh (Income Statement)
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-2 font-semibold text-slate-700 text-left w-64 border-r border-slate-200">Chỉ tiêu</th>
+                  {derivedYears.map(y => <th key={y.id} className="px-4 py-2 text-right font-bold text-slate-900 min-w-[140px]">Năm {y.year}</th>)}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <Row label="Doanh thu thuần" years={derivedYears} field="revenue" />
+                <Row label="Giá vốn hàng bán (COGS)" years={derivedYears} field="cogs" negative />
+                <Row label="Lợi nhuận gộp" years={derivedYears} field="grossProfit" calc bold standout="blue" />
+                <Row label="Chi phí vận hành (OPEX)" years={derivedYears} field="operatingExpenses" negative />
+                <Row label="EBITDA" years={derivedYears} field="ebitda" calc bold />
+                <Row label="Khấu hao" years={derivedYears} field="depreciation" negative />
+                <Row label="EBIT (Lợi nhuận HĐKD)" years={derivedYears} field="ebit" calc bold />
+                <Row label="Chi phí lãi vay" years={derivedYears} field="interestExpense" negative />
+                <Row label="EBT (LN trước thuế)" years={derivedYears} field="ebt" calc bold />
+                <Row label="Thuế TNDN" years={derivedYears} field="taxes" negative />
+                <Row label="Lợi nhuận ròng (Net Income)" years={derivedYears} field="netIncome" calc header standout="green" />
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 2. BALANCE SHEET */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-teal-600 px-5 py-3 text-white font-bold flex items-center gap-2">
+            <Building2 className="w-5 h-5" /> Cân đối Kế toán (Balance Sheet)
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-2 font-semibold text-slate-700 text-left w-64 border-r border-slate-200">Tài sản & Nguồn vốn</th>
+                  {derivedYears.map(y => <th key={y.id} className="px-4 py-2 text-right font-bold text-slate-900 min-w-[140px]">Năm {y.year}</th>)}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <SectionTitle title="TÀI SẢN (ASSETS)" yearsCount={derivedYears.length} />
+                <Row label="Tiền mặt" years={derivedYears} field="cash" />
+                <Row label="Phải thu KH" years={derivedYears} field="accountsReceivable" />
+                <Row label="Hàng tồn kho" years={derivedYears} field="inventory" />
+                <Row label="TS Cố định (PPE)" years={derivedYears} field="propertyPlantEquipment" />
+                <Row label="Tổng Tài sản" years={derivedYears} field="totalAssets" calc header standout="teal" />
+
+                <SectionTitle title="NỢ PHẢI TRẢ (LIABILITIES)" yearsCount={derivedYears.length} />
+                <Row label="Phải trả NCC" years={derivedYears} field="accountsPayable" />
+                <Row label="Nợ vay ngắn hạn" years={derivedYears} field="shortTermDebt" />
+                <Row label="Nợ vay dài hạn" years={derivedYears} field="longTermDebt" />
+                <Row label="Tổng Nợ Phải trả" years={derivedYears} field="totalLiabilities" calc bold />
+
+                <SectionTitle title="VỐN CHỦ SỞ HỮU (EQUITY)" yearsCount={derivedYears.length} />
+                <Row label="Vốn góp" years={derivedYears} field="ownerCapital" />
+                <Row label="Lợi nhuận chưa PP" years={derivedYears} field="retainedEarnings" calc />
+                <Row label="Tổng Vốn CSH" years={derivedYears} field="totalEquity" calc bold />
+
+                <Row label="Tổng Nguồn Vốn (NV = Nợ + Vốn)" years={derivedYears} field="totalLiabilitiesAndEquity" calc header standout="slate" />
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 3. CASH FLOW STATEMENT */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden min-h-full">
+          <div className="bg-indigo-600 px-5 py-3 text-white font-bold flex items-center gap-2">
+            <Wallet className="w-5 h-5" /> Báo cáo LC Tiền tệ (Cash Flow)
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm h-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-2 font-semibold text-slate-700 text-left w-64 border-r border-slate-200">Dòng Tiền</th>
+                  {derivedYears.map(y => <th key={y.id} className="px-4 py-2 text-right font-bold text-slate-900 min-w-[140px]">Năm {y.year}</th>)}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <Row label="Lưu chuyển từ Hoạt động KQKD" years={derivedYears} field="opsCF" calc bold />
+                <Row label="Lưu chuyển từ HĐ Đầu tư (CapEx)" years={derivedYears} field="invCF" calc bold />
+                <Row label="Lưu chuyển từ HĐ Tài chính" years={derivedYears} field="finCF" calc bold />
+                <tr><td colSpan={derivedYears.length + 1} className="py-2"></td></tr>
+                <Row label="Lưu chuyển tiền thuần trong kỳ" years={derivedYears} field="netCashFlow" calc header standout="indigo" />
+                <Row label="Tiền mặt cuối kỳ (Balance Sheet)" years={derivedYears} field="cash" bold />
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Components ──────────────────────────────────────────
+
+function KPICard({ title, value, icon, colorClass }: { title: string, value: string, icon: React.ReactNode, colorClass: string }) {
+  return (
+    <div className={`border rounded-2xl p-4 flex flex-col justify-center gap-2 ${colorClass}`}>
+      <div className="flex items-center gap-2 opacity-80">
+        {icon}
+        <span className="text-xs font-bold uppercase tracking-wider">{title}</span>
+      </div>
+      <div className="text-2xl font-black tabular-nums tracking-tight">{value}</div>
+    </div>
+  );
+}
+
+function SectionTitle({ title, yearsCount }: { title: string, yearsCount: number }) {
+  return (
+    <tr className="bg-slate-100/50">
+      <td colSpan={yearsCount + 1} className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+        {title}
+      </td>
+    </tr>
+  );
+}
+
+function Row({ label, years, field, calc, negative, bold, header, standout }: { label: string, years: any[], field: string, calc?: boolean, negative?: boolean, bold?: boolean, header?: boolean, standout?: string }) {
+  const fmt = (v: number) => {
+    if (v === 0) return "-";
+    return new Intl.NumberFormat("vi-VN").format(Math.abs(v));
+  };
+
+  const getStandoutClasses = () => {
+    if (standout === "blue") return "bg-blue-50/50 border-y-2 border-blue-200 text-blue-900";
+    if (standout === "green") return "bg-green-50/50 border-y-2 border-green-200 text-green-900";
+    if (standout === "teal") return "bg-teal-50/50 border-y-2 border-teal-200 text-teal-900";
+    if (standout === "slate") return "bg-slate-100 border-y-2 border-slate-300 text-slate-900";
+    if (standout === "indigo") return "bg-indigo-50 border-y-2 border-indigo-200 text-indigo-900";
+    return "";
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Tổng Quan Tài Chính</h1>
-        <p className="text-sm text-slate-500 mt-1">Tổng hợp từ <span className="font-semibold text-slate-700">{transactions.length}</span> giao dịch đã ghi nhận</p>
-      </div>
+    <tr className={`hover:bg-slate-50 transition-colors ${header ? "text-base uppercase tracking-wide" : ""} ${getStandoutClasses()}`}>
+      <td className={`px-4 py-2.5 text-slate-700 border-r border-slate-100 ${bold || header ? "font-bold" : "font-medium"}`}>
+        {label}
+      </td>
+      {years.map(y => {
+        const val = calc ? y._calculated[field] : y[field];
+        const isNegativeRender = negative ? val > 0 : val < 0;
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard label="Doanh Thu" value={formatVND(d.incomeStatement.revenue)} icon={<DollarSign className="w-5 h-5" />} colorClass="bg-blue-50 text-blue-600 border-blue-100" />
-        <KPICard label="Lợi Nhuận Ròng" value={formatVND(d.incomeStatement.netIncome)} icon={d.incomeStatement.netIncome >= 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-          colorClass={d.incomeStatement.netIncome >= 0 ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"} subtitle={`Biên LN: ${profitMargin}%`} />
-        <KPICard label="Tiền Mặt" value={formatVND(d.balanceSheet.assets.cash)} icon={<Wallet className="w-5 h-5" />} colorClass="bg-indigo-50 text-indigo-600 border-indigo-100" />
-        <KPICard label="Tổng Tài Sản" value={formatVND(d.balanceSheet.assets.totalAssets)} icon={<Layers className="w-5 h-5" />} colorClass="bg-slate-50 text-slate-600 border-slate-200" />
-      </div>
-
-      {/* Balance Check */}
-      <div className={`p-3 rounded-xl flex items-center space-x-2 text-sm font-medium border ${isBalanced ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}`}>
-        {isBalanced ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-        <span>{isBalanced ? "Phương trình Kế Toán cân bằng" : "Phương trình Kế Toán chưa cân"}</span>
-        <span className="font-mono text-xs ml-auto bg-white/60 px-2 py-1 rounded-md">
-          TÀI SẢN = NỢ + VỐN CSH → {formatVND(d.balanceSheet.assets.totalAssets)} = {formatVND(d.balanceSheet.liabilities.totalLiabilities + d.balanceSheet.equity.totalEquity)}
-        </span>
-      </div>
-
-      {/* ── Visual Chart ─────────────────────────── */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mt-6">
-        <div className="flex items-center space-x-2 text-slate-800 font-bold mb-4">
-          <BarChart2 className="w-5 h-5 text-blue-600" />
-          <h2>Tương quan Doanh thu & Chi phí</h2>
-        </div>
-        <div style={{ height: 350, width: '100%', minHeight: 350 }} className="text-xs">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} tickFormatter={(val) => `${(val / 1e6).toFixed(0)}M`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
-              <Bar dataKey="DoanhThu" name="Doanh Thu" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={50} />
-              <Bar dataKey="ChiPhi" name="Chi Phí" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={50} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* ── 3 Statements Grid ─────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* ▶ Income Statement */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 text-white flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5" />
-            <h2 className="font-bold text-base">Kết Quả Kinh Doanh</h2>
-          </div>
-          <div className="p-5 space-y-3 flex-1 text-sm">
-            <Row label="Doanh thu bán hàng" val={formatVND(d.incomeStatement.revenue)} />
-            <Row label="Giá vốn hàng bán" val={`- ${formatVND(d.incomeStatement.cogs)}`} negative />
-            <Divider />
-            <Row label="Lợi nhuận gộp" val={formatVND(d.incomeStatement.grossProfit)} bold />
-            <Row label="Chi phí vận hành" val={`- ${formatVND(d.incomeStatement.operatingExpenses)}`} negative />
-            <Row label="Khấu hao" val={`- ${formatVND(d.incomeStatement.depreciation)}`} negative />
-            <div className="mt-4 pt-3 border-t-2 border-slate-800 bg-slate-900 text-white px-4 py-3 rounded-xl flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-wider">Lợi Nhuận Ròng</span>
-              <span className={`text-lg font-black ${d.incomeStatement.netIncome >= 0 ? "text-green-400" : "text-red-400"}`}>
-                {formatVND(d.incomeStatement.netIncome)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ▶ Balance Sheet */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-white flex items-center space-x-2">
-            <Layers className="w-5 h-5" />
-            <h2 className="font-bold text-base">Cân Đối Kế Toán</h2>
-          </div>
-          <div className="p-5 space-y-4 flex-1 text-sm">
-            {/* Assets */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wider">Tài Sản</h3>
-              <Row label="Tiền mặt" val={formatVND(d.balanceSheet.assets.cash)} />
-              <Row label="Phải thu khách hàng" val={formatVND(d.balanceSheet.assets.accountsReceivable)} />
-              <Row label="Tài sản cố định" val={formatVND(d.balanceSheet.assets.propertyPlantEquipment)} />
-              <div className="bg-blue-50 px-3 py-2 rounded-lg flex justify-between mt-2">
-                <span className="text-xs font-bold text-slate-800 uppercase">Tổng Tài Sản</span>
-                <span className="font-bold text-blue-700">{formatVND(d.balanceSheet.assets.totalAssets)}</span>
-              </div>
-            </div>
-            <hr className="border-slate-100" />
-            {/* Liabilities */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold text-orange-600 uppercase tracking-wider">Nợ Phải Trả</h3>
-              <Row label="Phải trả người bán" val={formatVND(d.balanceSheet.liabilities.accountsPayable)} />
-              <div className="bg-orange-50 px-3 py-2 rounded-lg flex justify-between mt-2">
-                <span className="text-xs font-bold text-slate-800 uppercase">Tổng Nợ</span>
-                <span className="font-bold text-orange-700">{formatVND(d.balanceSheet.liabilities.totalLiabilities)}</span>
-              </div>
-            </div>
-            <hr className="border-slate-100" />
-            {/* Equity */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold text-purple-600 uppercase tracking-wider">Vốn Chủ Sở Hữu</h3>
-              <Row label="Vốn góp" val={formatVND(d.balanceSheet.equity.ownerCapital)} />
-              <Row label="Lợi nhuận giữ lại" val={formatVND(d.balanceSheet.equity.retainedEarnings)} />
-              <div className="bg-purple-50 px-3 py-2 rounded-lg flex justify-between mt-2">
-                <span className="text-xs font-bold text-slate-800 uppercase">Tổng Vốn CSH</span>
-                <span className="font-bold text-purple-700">{formatVND(d.balanceSheet.equity.totalEquity)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ▶ Cash Flow */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-white flex items-center space-x-2">
-            <Wallet className="w-5 h-5" />
-            <h2 className="font-bold text-base">Lưu Chuyển Tiền Tệ</h2>
-          </div>
-          <div className="p-5 space-y-3 flex-1 text-sm">
-            <CashRow label="Hoạt động Kinh doanh" val={d.cashFlow.operations} format={formatVND} hint="Thu bán hàng − Chi phí tiền mặt" />
-            <CashRow label="Hoạt động Đầu tư" val={d.cashFlow.investing} format={formatVND} hint="Chi mua tài sản / máy móc" />
-            <CashRow label="Hoạt động Tài chính" val={d.cashFlow.financing} format={formatVND} hint="Tiền góp vốn / vay" />
-            <div className="mt-4 pt-3 border-t-2 border-slate-800 bg-emerald-50 px-4 py-3 rounded-xl flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-800">Lưu chuyển tiền thuần</span>
-              <span className={`text-lg font-black ${d.cashFlow.netCashFlow >= 0 ? "text-green-700" : "text-red-600"}`}>
-                {d.cashFlow.netCashFlow > 0 ? "+" : ""}{formatVND(d.cashFlow.netCashFlow)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-// ── Sub-components ─────────────────────────────────────
-function KPICard({ label, value, icon, colorClass, subtitle }: { label: string; value: string; icon: React.ReactNode; colorClass: string; subtitle?: string }) {
-  return (
-    <div className={`${colorClass} border rounded-2xl p-4 flex flex-col space-y-2`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider opacity-80">{label}</span>
-        {icon}
-      </div>
-      <span className="text-xl font-bold">{value}</span>
-      {subtitle && <span className="text-xs opacity-70">{subtitle}</span>}
-    </div>
-  );
-}
-
-function Row({ label, val, bold, negative }: { label: string; val: string; bold?: boolean; negative?: boolean }) {
-  return (
-    <div className="flex justify-between items-center py-1">
-      <span className={`text-slate-600 ${bold ? "font-semibold text-slate-800" : ""}`}>{label}</span>
-      <span className={`font-medium tabular-nums ${negative ? "text-red-600" : (bold ? "font-bold text-blue-700" : "text-slate-800")}`}>{val}</span>
-    </div>
-  );
-}
-
-function Divider() {
-  return <hr className="border-slate-100 my-1" />;
-}
-
-function CashRow({ label, val, format, hint }: { label: string; val: number; format: (n: number) => string; hint: string }) {
-  return (
-    <div className="py-2 border-b border-slate-100">
-      <div className="flex justify-between items-center">
-        <span className="text-slate-700 font-medium">{label}</span>
-        <span className={`font-semibold tabular-nums ${val >= 0 ? "text-green-600" : "text-red-600"}`}>
-          {val > 0 ? "+" : ""}{format(val)}
-        </span>
-      </div>
-      <p className="text-xs text-slate-400 mt-0.5">{hint}</p>
-    </div>
+        return (
+          <td key={y.id} className={`px-4 py-2.5 text-right tabular-nums ${bold || header ? "font-bold" : ""} ${isNegativeRender ? "text-red-600" : "text-slate-900"}`}>
+            {isNegativeRender && val !== 0 ? "- " : ""}{fmt(val as number)}
+          </td>
+        );
+      })}
+    </tr>
   );
 }

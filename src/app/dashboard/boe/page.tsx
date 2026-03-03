@@ -6,7 +6,7 @@ import {
     BarChart3, Target, Clock, Percent, Coffee, ShoppingBag, Store,
     Scissors, GraduationCap, Truck, Plus
 } from "lucide-react";
-import { useFinance } from "@/context/FinanceContext";
+import { useFinance, YearData } from "@/context/FinanceContext";
 
 // ── Exchange rate ──────────────────────────────────────
 
@@ -260,10 +260,41 @@ export default function BOEPage() {
 
                         <button
                             onClick={() => {
-                                const newId = createProject(`Kế hoạch: ${tmpl.name}`);
+                                const startYear = new Date().getFullYear();
+                                const initialYears: YearData[] = [
+                                    {
+                                        id: startYear.toString(),
+                                        year: startYear,
+                                        revenue: results.year1["revenue"],
+                                        cogs: results.year1["cogs"],
+                                        operatingExpenses: results.year1["labor"] + results.year1["rent"] + results.year1["utilities"] + results.year1["otherOpex"] + results.year1["marketing"] + results.year1["maintenance"] + results.year1["reinvestment"],
+                                        depreciation: results.year1["depreciation"],
+                                        interestExpense: 0, taxes: 0,
+                                        cash: results.year1["revenue"] * 0.1,
+                                        accountsReceivable: 0, inventory: 0,
+                                        propertyPlantEquipment: results.totalCapex - results.year1["depreciation"],
+                                        accountsPayable: 0, shortTermDebt: 0, longTermDebt: 0,
+                                        ownerCapital: results.totalCapex,
+                                    },
+                                    ...[1, 2].map(offset => ({
+                                        id: (startYear + offset).toString(),
+                                        year: startYear + offset,
+                                        revenue: results.stabilized.revenue * 12,
+                                        cogs: results.stabilized.cogs * 12,
+                                        operatingExpenses: (results.stabilized.labor + results.stabilized.rent + results.stabilized.utilities + results.stabilized.otherOpex + results.stabilized.marketing + results.stabilized.maintenance + results.stabilized.reinvestment) * 12,
+                                        depreciation: results.stabilized.depreciation * 12,
+                                        interestExpense: 0, taxes: 0,
+                                        cash: results.stabilized.revenue * 1.2,
+                                        accountsReceivable: 0, inventory: 0,
+                                        propertyPlantEquipment: Math.max(0, results.totalCapex - results.year1["depreciation"] - (results.stabilized.depreciation * 12 * offset)),
+                                        accountsPayable: 0, shortTermDebt: 0, longTermDebt: 0,
+                                        ownerCapital: results.totalCapex,
+                                    }))
+                                ];
+                                const newId = createProject(`Kế hoạch: ${tmpl.name}`, initialYears);
                                 switchProject(newId);
                                 applyTemplate(tmpl);
-                                alert(`Đã tạo Kế hoạch mới: "${tmpl.name}"!`);
+                                alert(`Đã tạo Kế hoạch mới: "${tmpl.name}" với dữ liệu dự phóng 3 năm!`);
                             }}
                             className="mt-3 w-full py-1.5 bg-white border border-slate-200 text-blue-600 rounded-lg text-[11px] font-bold flex items-center justify-center space-x-1 hover:bg-blue-50 hover:border-blue-200 transition-colors"
                         >
