@@ -147,3 +147,152 @@ export function generateInsights(years: any[]): InsightItem[] {
         return order[a.type] - order[b.type];
     });
 }
+
+// ══════════════════════════════════════════════════
+// AI FORECAST — Linear Regression + Moving Average
+// ══════════════════════════════════════════════════
+
+interface ForecastPoint {
+    year: number;
+    actual?: number;
+    forecast: number;
+    lower: number;
+    upper: number;
+}
+
+export interface ForecastResult {
+    revenue: ForecastPoint[];
+    cogs: ForecastPoint[];
+    opex: ForecastPoint[];
+    netIncome: ForecastPoint[];
+    insights: InsightItem[];
+}
+
+function linearRegression(points: { x: number; y: number }[]): { slope: number; intercept: number; r2: number } {
+    const n = points.length;
+    if (n < 2) return { slope: 0, intercept: points[0]?.y || 0, r2: 0 };
+
+    const sumX = points.reduce((s, p) => s + p.x, 0);
+    const sumY = points.reduce((s, p) => s + p.y, 0);
+    const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
+    const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
+
+    const denom = n * sumX2 - sumX * sumX;
+    if (denom === 0) return { slope: 0, intercept: sumY / n, r2: 0 };
+
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+
+    // R-squared
+    const meanY = sumY / n;
+    const ssRes = points.reduce((s, p) => s + Math.pow(p.y - (slope * p.x + intercept), 2), 0);
+    const ssTot = points.reduce((s, p) => s + Math.pow(p.y - meanY, 2), 0);
+    const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+
+    return { slope, intercept, r2 };
+}
+
+function forecastSeries(years: any[], field: string, periodsAhead: number = 3): ForecastPoint[] {
+    const points = years.map((y, i) => ({ x: i, y: y[field] || 0 }));
+    const { slope, intercept, r2 } = linearRegression(points);
+
+    // Standard error for confidence interval
+    const residuals = points.map(p => p.y - (slope * p.x + intercept));
+    const se = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / Math.max(1, points.length - 2));
+    const confidenceMultiplier = 1.96; // 95% CI
+
+    const result: ForecastPoint[] = [];
+
+    // Actual + fitted
+    years.forEach((y, i) => {
+        const fitted = slope * i + intercept;
+        result.push({
+            year: y.year,
+            actual: y[field] || 0,
+            forecast: Math.max(0, fitted),
+            lower: Math.max(0, fitted - confidenceMultiplier * se),
+            upper: fitted + confidenceMultiplier * se,
+        });
+    });
+
+    // Future forecasts
+    const lastYear = years[years.length - 1].year;
+    for (let j = 1; j <= periodsAhead; j++) {
+        const idx = points.length - 1 + j;
+        const predicted = slope * idx + intercept;
+        const uncertaintyGrowth = 1 + j * 0.3; // Wider CI for further out
+        result.push({
+            year: lastYear + j,
+            forecast: Math.max(0, predicted),
+            lower: Math.max(0, predicted - confidenceMultiplier * se * uncertaintyGrowth),
+            upper: predicted + confidenceMultiplier * se * uncertaintyGrowth,
+        });
+    }
+
+    return result;
+}
+
+export function generateForecast(years: any[]): ForecastResult {
+    if (!years || years.length < 2) {
+        return {
+            revenue: [], cogs: [], opex: [], netIncome: [],
+            insights: [{ type: 'neutral', title: 'Chưa đủ dữ liệu', message: 'Cần tối thiểu 2 năm dữ liệu để AI có thể dự báo xu hướng.' }],
+        };
+    }
+
+    // Compute net income for each year
+    const enriched = years.map(y => ({
+        ...y,
+        _netIncome: y.revenue - y.cogs - y.operatingExpenses - y.depreciation - y.interestExpense - y.taxes,
+    }));
+
+    const revenue = forecastSeries(years, 'revenue');
+    const cogs = forecastSeries(years, 'cogs');
+    const opex = forecastSeries(years, 'operatingExpenses');
+    const netIncome = forecastSeries(enriched, '_netIncome');
+
+    // Generate forecast insights
+    const insights: InsightItem[] = [];
+    const lastActualRevenue = years[years.length - 1].revenue;
+    const nextForecastRevenue = revenue.find(r => !r.actual)?.forecast || 0;
+
+    if (lastActualRevenue > 0 && nextForecastRevenue > 0) {
+        const growthPct = ((nextForecastRevenue - lastActualRevenue) / lastActualRevenue) * 100;
+        if (growthPct > 0) {
+            insights.push({
+                type: 'positive',
+                title: `📈 Dự báo Doanh thu tăng ${growthPct.toFixed(1)}%`,
+                message: `Xu hướng tuyến tính cho thấy doanh thu năm tới dự kiến đạt ~${new Intl.NumberFormat('vi-VN').format(Math.round(nextForecastRevenue))} VNĐ, tăng ${growthPct.toFixed(1)}% so với năm hiện tại.`,
+            });
+        } else {
+            insights.push({
+                type: 'warning',
+                title: `📉 Doanh thu dự kiến giảm ${Math.abs(growthPct).toFixed(1)}%`,
+                message: `Nếu xu hướng hiện tại tiếp diễn, doanh thu năm tới có thể giảm còn ~${new Intl.NumberFormat('vi-VN').format(Math.round(nextForecastRevenue))} VNĐ. Cần hành động ngay để đảo chiều.`,
+            });
+        }
+    }
+
+    const lastNetIncome = enriched[enriched.length - 1]._netIncome;
+    const nextNetIncome = netIncome.find(r => !r.actual)?.forecast || 0;
+    if (lastNetIncome > 0 && nextNetIncome <= 0) {
+        insights.push({
+            type: 'negative',
+            title: '🚨 Cảnh báo: Có thể lỗ năm tới',
+            message: 'Mô hình dự báo lợi nhuận ròng có thể chuyển sang âm. Chi phí đang tăng nhanh hơn doanh thu. Cần review cấu trúc chi phí ngay.',
+        });
+    }
+
+    // Burn rate projection
+    const lastCash = years[years.length - 1].cash;
+    if (lastCash > 0 && nextNetIncome < 0) {
+        const monthsRunway = (lastCash / Math.abs(nextNetIncome)) * 12;
+        insights.push({
+            type: 'warning',
+            title: `⏳ Cash Runway: ~${monthsRunway.toFixed(0)} tháng`,
+            message: `Với dự trữ tiền mặt hiện tại và tốc độ "đốt" tiền dự kiến, vốn sẽ cạn kiệt trong khoảng ${monthsRunway.toFixed(0)} tháng nếu không có thay đổi.`,
+        });
+    }
+
+    return { revenue, cogs, opex, netIncome, insights };
+}

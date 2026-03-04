@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync, Users, Building, BarChart3, GitBranch, FileText, UserCircle, Upload, Target, Package, Receipt, Clock } from "lucide-react";
+import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync, Users, Building, BarChart3, GitBranch, FileText, UserCircle, Upload, Target, Package, Receipt, Clock, BrainCircuit } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { createClient } from "@/utils/supabase/client";
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
     { href: "/dashboard/inventory", label: "Kho", icon: Package, exact: false },
     { href: "/dashboard/budget", label: "Ngân sách", icon: Target, exact: false },
     { href: "/dashboard/tax", label: "Thuế & VAT", icon: Receipt, exact: false },
+    { href: "/dashboard/forecast", label: "AI Forecast", icon: BrainCircuit, exact: false },
     { href: "/dashboard/import", label: "Import CSV", icon: Upload, exact: false },
     { href: "/dashboard/consolidated", label: "Tổng Hợp", icon: BarChart3, exact: false },
     { href: "/dashboard/boe", label: "BOE", icon: TrendingUp, exact: false },
