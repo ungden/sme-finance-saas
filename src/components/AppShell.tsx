@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync, Users, Building, BarChart3, GitBranch, FileText, UserCircle, Upload, Target, Package, Receipt, Clock, BrainCircuit } from "lucide-react";
+import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync, Users, Building, BarChart3, GitBranch, FileText, UserCircle, Upload, Target, Package, Receipt, Clock, BrainCircuit, Workflow, Settings2, Building2, ArrowDownUp, Wallet, Sparkles } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { createClient } from "@/utils/supabase/client";
@@ -23,6 +23,13 @@ const NAV_ITEMS = [
     { href: "/dashboard/consolidated", label: "Tổng Hợp", icon: BarChart3, exact: false },
     { href: "/dashboard/boe", label: "BOE", icon: TrendingUp, exact: false },
     { href: "/dashboard/audit", label: "Nhật ký", icon: Clock, exact: false },
+    // ── Finance OS ──
+    { href: "/dashboard/finance-os", label: "Finance OS", icon: Workflow, exact: true },
+    { href: "/dashboard/finance-os/rules", label: "Phân bổ %", icon: Settings2, exact: false },
+    { href: "/dashboard/finance-os/departments", label: "Phòng ban", icon: Building2, exact: false },
+    { href: "/dashboard/finance-os/cashflow", label: "Dòng tiền", icon: ArrowDownUp, exact: false },
+    { href: "/dashboard/finance-os/salary", label: "Lương & Budget", icon: Wallet, exact: false },
+    { href: "/dashboard/finance-os/plan", label: "AI Planner", icon: Sparkles, exact: false },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
