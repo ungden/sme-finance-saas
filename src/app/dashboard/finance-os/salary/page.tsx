@@ -43,15 +43,15 @@ export default function SalaryPage() {
                     <ArrowLeft className="w-4 h-4 text-slate-600" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-xl font-bold text-slate-900">Luong & Budget theo phong ban</h1>
+                    <h1 className="text-xl font-bold text-slate-900">Lương & Budget theo phòng ban</h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Gan nhan vien vao phong ban, enforce khong vuot budget
+                        Gán nhân viên vào phòng ban, enforce không vượt budget
                     </p>
                 </div>
                 <button
                     onClick={() => {
                         if (departments.length === 0) {
-                            alert("Vui long tao phong ban truoc!");
+                            alert("Vui lòng tạo phòng ban trước!");
                             return;
                         }
                         setSelectedDeptId(departments[0].id);
@@ -59,7 +59,7 @@ export default function SalaryPage() {
                     }}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition"
                 >
-                    <Plus className="w-4 h-4" /> Them nhan vien
+                    <Plus className="w-4 h-4" /> Thêm nhân viên
                 </button>
             </div>
 
@@ -67,10 +67,10 @@ export default function SalaryPage() {
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-5">
                 <div className="flex items-center gap-2 mb-3">
                     <Calculator className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-bold text-blue-900">Cong thuc tinh luong</span>
+                    <span className="text-sm font-bold text-blue-900">Công thức tính lương</span>
                 </div>
                 <div className="font-mono text-sm text-blue-800 bg-white/60 rounded-xl px-4 py-3">
-                    <span className="text-slate-500">Luong NV = </span>
+                    <span className="text-slate-500">Lương NV = </span>
                     <span className="text-blue-600">Doanh thu</span>
                     <span className="text-slate-400"> x </span>
                     <span className="text-purple-600">Payroll%</span>
@@ -80,17 +80,17 @@ export default function SalaryPage() {
                     <span className="text-emerald-600">Employee Share</span>
                 </div>
                 <div className="mt-2 text-xs text-blue-700">
-                    Hien tai: {formatVND(monthlyRevenue)} x {payrollPercent}% = Payroll Pool {formatVND(payrollPool)}
+                    Hiện tại: {formatVND(monthlyRevenue)} x {payrollPercent}% = Payroll Pool {formatVND(payrollPool)}
                 </div>
             </div>
 
             {/* Add form */}
             {showForm && (
                 <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-5 space-y-4">
-                    <h3 className="text-sm font-bold text-slate-700">Them nhan vien moi</h3>
+                    <h3 className="text-sm font-bold text-slate-700">Thêm nhân viên mới</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Phong ban</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Phòng ban</label>
                             <select
                                 value={selectedDeptId}
                                 onChange={e => setSelectedDeptId(e.target.value)}
@@ -102,7 +102,7 @@ export default function SalaryPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Ho ten</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Họ tên</label>
                             <input
                                 value={empForm.name}
                                 onChange={e => setEmpForm(p => ({ ...p, name: e.target.value }))}
@@ -111,7 +111,7 @@ export default function SalaryPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Vi tri</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Vị trí</label>
                             <input
                                 value={empForm.role}
                                 onChange={e => setEmpForm(p => ({ ...p, role: e.target.value }))}
@@ -120,7 +120,7 @@ export default function SalaryPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Luong co ban</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Lương cơ bản</label>
                             <input
                                 type="number"
                                 value={empForm.baseSalary || ""}
@@ -130,7 +130,7 @@ export default function SalaryPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Thuong</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Thưởng</label>
                             <input
                                 type="number"
                                 value={empForm.bonus || ""}
@@ -142,10 +142,10 @@ export default function SalaryPage() {
                     </div>
                     <div className="flex gap-2">
                         <button onClick={handleAdd} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700">
-                            Them
+                            Thêm
                         </button>
                         <button onClick={() => setShowForm(false)} className="px-5 py-2.5 bg-slate-100 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-200">
-                            Huy
+                            Hủy
                         </button>
                     </div>
                 </div>
@@ -154,8 +154,8 @@ export default function SalaryPage() {
             {/* Department-by-department breakdown */}
             {departments.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
-                    Chua co phong ban nao.
-                    <Link href="/dashboard/finance-os/departments" className="text-blue-600 underline ml-1">Tao phong ban truoc</Link>
+                    Chưa có phòng ban nào.
+                    <Link href="/dashboard/finance-os/departments" className="text-blue-600 underline ml-1">Tạo phòng ban trước</Link>
                 </div>
             ) : (
                 departmentBudgets.map(db => {
@@ -174,9 +174,9 @@ export default function SalaryPage() {
                                     <span className="text-slate-500">Budget: <strong>{formatVND(db.budget)}</strong></span>
                                     <span className={overBudget ? "text-red-600 font-bold" : "text-emerald-600 font-bold"}>
                                         {overBudget ? (
-                                            <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vuot {formatVND(Math.abs(db.remaining))}</span>
+                                            <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vượt {formatVND(Math.abs(db.remaining))}</span>
                                         ) : (
-                                            <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" />Con {formatVND(db.remaining)}</span>
+                                            <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" />Còn {formatVND(db.remaining)}</span>
                                         )}
                                     </span>
                                 </div>
@@ -195,11 +195,11 @@ export default function SalaryPage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                            <th className="text-left px-5 py-2.5 font-semibold">Ho ten</th>
-                                            <th className="text-left px-5 py-2.5 font-semibold">Vi tri</th>
-                                            <th className="text-right px-5 py-2.5 font-semibold">Luong</th>
-                                            <th className="text-right px-5 py-2.5 font-semibold">Thuong</th>
-                                            <th className="text-right px-5 py-2.5 font-semibold">Tong</th>
+                                            <th className="text-left px-5 py-2.5 font-semibold">Họ tên</th>
+                                            <th className="text-left px-5 py-2.5 font-semibold">Vị trí</th>
+                                            <th className="text-right px-5 py-2.5 font-semibold">Lương</th>
+                                            <th className="text-right px-5 py-2.5 font-semibold">Thưởng</th>
+                                            <th className="text-right px-5 py-2.5 font-semibold">Tổng</th>
                                             <th className="text-right px-5 py-2.5 font-semibold">% Budget</th>
                                             <th className="w-10"></th>
                                         </tr>
@@ -208,7 +208,7 @@ export default function SalaryPage() {
                                         {db.employees.length === 0 ? (
                                             <tr>
                                                 <td colSpan={7} className="px-5 py-6 text-center text-slate-400 text-xs">
-                                                    Chua co nhan vien nao trong phong ban nay
+                                                     Chưa có nhân viên nào trong phòng ban này
                                                 </td>
                                             </tr>
                                         ) : (
@@ -239,7 +239,7 @@ export default function SalaryPage() {
                                     {db.employees.length > 0 && (
                                         <tfoot>
                                             <tr className="bg-slate-50 border-t border-slate-200">
-                                                <td className="px-5 py-2.5 font-bold text-slate-700" colSpan={2}>Tong phong ban</td>
+                                                <td className="px-5 py-2.5 font-bold text-slate-700" colSpan={2}>Tổng phòng ban</td>
                                                 <td className="px-5 py-2.5 text-right tabular-nums font-bold">{formatVND(db.totalSalary)}</td>
                                                 <td className="px-5 py-2.5 text-right tabular-nums font-bold text-amber-600">{formatVND(db.totalBonus)}</td>
                                                 <td className="px-5 py-2.5 text-right tabular-nums font-bold">{formatVND(db.totalUsed)}</td>
@@ -260,26 +260,26 @@ export default function SalaryPage() {
             {/* Grand total */}
             {departmentBudgets.length > 0 && (
                 <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5">
-                    <h3 className="text-sm font-bold text-slate-700 mb-3">Tong hop toan cong ty</h3>
+                    <h3 className="text-sm font-bold text-slate-700 mb-3">Tổng hợp toàn công ty</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                         <div>
-                            <div className="text-xs text-slate-500 mb-1">Tong Payroll Pool</div>
+                            <div className="text-xs text-slate-500 mb-1">Tổng Payroll Pool</div>
                             <div className="text-lg font-bold text-slate-900 tabular-nums">{formatVND(payrollPool)}</div>
                         </div>
                         <div>
-                            <div className="text-xs text-slate-500 mb-1">Tong luong thuc te</div>
+                            <div className="text-xs text-slate-500 mb-1">Tổng lương thực tế</div>
                             <div className="text-lg font-bold text-slate-900 tabular-nums">
                                 {formatVND(departmentBudgets.reduce((s, d) => s + d.totalUsed, 0))}
                             </div>
                         </div>
                         <div>
-                            <div className="text-xs text-slate-500 mb-1">Con trong</div>
+                            <div className="text-xs text-slate-500 mb-1">Còn trống</div>
                             <div className={`text-lg font-bold tabular-nums ${departmentBudgets.reduce((s, d) => s + d.remaining, 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                                 {formatVND(Math.abs(departmentBudgets.reduce((s, d) => s + d.remaining, 0)))}
                             </div>
                         </div>
                         <div>
-                            <div className="text-xs text-slate-500 mb-1">Tong nhan vien</div>
+                            <div className="text-xs text-slate-500 mb-1">Tổng nhân viên</div>
                             <div className="text-lg font-bold text-slate-900">{employees.length}</div>
                         </div>
                     </div>

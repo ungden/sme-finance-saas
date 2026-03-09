@@ -36,8 +36,8 @@ export default function AllocationRulesPage() {
                     <ArrowLeft className="w-4 h-4 text-slate-600" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-xl font-bold text-slate-900">Quy tac phan bo doanh thu</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Cau hinh % revenue cho tung quy (tong phai = 100%)</p>
+                    <h1 className="text-xl font-bold text-slate-900">Quy tắc phân bổ doanh thu</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Cấu hình % revenue cho từng quỹ (tổng phải = 100%)</p>
                 </div>
                 <button
                     onClick={handleSave}
@@ -45,7 +45,7 @@ export default function AllocationRulesPage() {
                     className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
                 >
                     <Save className="w-4 h-4" />
-                    {isSaving ? "Dang luu..." : saved ? "Da luu!" : "Luu thay doi"}
+                    {isSaving ? "Đang lưu..." : saved ? "Đã lưu!" : "Lưu thay đổi"}
                 </button>
             </div>
 
@@ -53,13 +53,13 @@ export default function AllocationRulesPage() {
             {!isValid && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
-                    Tong phan bo hien tai = <strong>{totalAllocPercent.toFixed(1)}%</strong>. Can dieu chinh de tong = 100%.
+                    Tổng phân bổ hiện tại = <strong>{totalAllocPercent.toFixed(1)}%</strong>. Cần điều chỉnh để tổng = 100%.
                 </div>
             )}
             {isValid && allocationRules.length > 0 && (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    Tong phan bo = 100%. He thong san sang hoat dong.
+                    Tổng phân bổ = 100%. Hệ thống sẵn sàng hoạt động.
                 </div>
             )}
 
@@ -67,9 +67,9 @@ export default function AllocationRulesPage() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="bg-slate-50 px-5 py-3 border-b border-slate-200">
                     <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        <div className="col-span-4">Hang muc</div>
+                        <div className="col-span-4">Hạng mục</div>
                         <div className="col-span-3 text-center">% Revenue</div>
-                        <div className="col-span-3 text-right">So tien (thang)</div>
+                        <div className="col-span-3 text-right">Số tiền (tháng)</div>
                         <div className="col-span-2 text-center">Preview</div>
                     </div>
                 </div>
@@ -143,7 +143,7 @@ export default function AllocationRulesPage() {
                 {/* Summary footer */}
                 <div className="bg-slate-50 px-5 py-3 border-t border-slate-200">
                     <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-4 text-sm font-bold text-slate-700">Tong</div>
+                        <div className="col-span-4 text-sm font-bold text-slate-700">Tổng</div>
                         <div className="col-span-3 text-center">
                             <span className={`text-sm font-bold ${isValid ? "text-emerald-600" : "text-red-600"}`}>
                                 {totalAllocPercent.toFixed(1)}%
@@ -161,11 +161,11 @@ export default function AllocationRulesPage() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <div className="flex items-center gap-2 mb-3">
                     <Sliders className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm font-semibold text-slate-700">Mo phong doanh thu</span>
+                    <span className="text-sm font-semibold text-slate-700">Mô phỏng doanh thu</span>
                 </div>
                 <p className="text-xs text-slate-500 mb-3">
-                    Nhap doanh thu gia dinh de xem so tien phan bo tuong ung.
-                    Doanh thu hien tai: <strong>{formatVND(monthlyRevenue)}</strong>
+                    Nhập doanh thu giả định để xem số tiền phân bổ tương ứng.
+                    Doanh thu hiện tại: <strong>{formatVND(monthlyRevenue)}</strong>
                 </p>
                 <input
                     type="number"
@@ -182,20 +182,20 @@ export default function AllocationRulesPage() {
                         onClick={() => fos.setRevenueOverride(null)}
                         className="mt-2 text-xs text-blue-600 font-medium hover:underline"
                     >
-                        Reset ve doanh thu thuc
+                        Reset về doanh thu thực
                     </button>
                 )}
             </div>
 
             {/* Help */}
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-sm text-blue-800">
-                <h3 className="font-bold mb-2">Huong dan phan bo</h3>
+                <h3 className="font-bold mb-2">Hướng dẫn phân bổ</h3>
                 <ul className="space-y-1 text-xs">
-                    <li><strong>COGS (25-35%):</strong> Chi phi hang ban, nguyen vat lieu, san xuat</li>
-                    <li><strong>Marketing (10-20%):</strong> Quang cao, brand, content, PR</li>
-                    <li><strong>Operations (15-25%):</strong> Mat bang, dien nuoc, van phong, bao hiem</li>
-                    <li><strong>Payroll (15-25%):</strong> Luong, thuong, BHXH cho toan bo nhan vien</li>
-                    <li><strong>Profit (10-20%):</strong> Loi nhuan giu lai, tai dau tu, du phong</li>
+                    <li><strong>COGS (25-35%):</strong> Chi phí hàng bán, nguyên vật liệu, sản xuất</li>
+                    <li><strong>Marketing (10-20%):</strong> Quảng cáo, brand, content, PR</li>
+                    <li><strong>Operations (15-25%):</strong> Mặt bằng, điện nước, văn phòng, bảo hiểm</li>
+                    <li><strong>Payroll (15-25%):</strong> Lương, thưởng, BHXH cho toàn bộ nhân viên</li>
+                    <li><strong>Profit (10-20%):</strong> Lợi nhuận giữ lại, tái đầu tư, dự phòng</li>
                 </ul>
             </div>
         </div>

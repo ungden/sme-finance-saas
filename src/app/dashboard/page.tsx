@@ -172,12 +172,12 @@ export default function DashboardPage() {
       {/* ── QUICK TOOLS ── */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {[
-          { href: "/dashboard/input", label: "Nhap Lieu", icon: BookOpen, color: "bg-blue-50 text-blue-600" },
-          { href: "/dashboard/hr", label: "Nhan Su", icon: Users, color: "bg-violet-50 text-violet-600" },
-          { href: "/dashboard/facilities", label: "Mat Bang", icon: Building, color: "bg-amber-50 text-amber-600" },
-          { href: "/dashboard/forecast", label: "AI Forecast", icon: BrainCircuit, color: "bg-emerald-50 text-emerald-600" },
-          { href: "/dashboard/consolidated", label: "Tong Hop", icon: BarChart3, color: "bg-pink-50 text-pink-600" },
-          { href: "/dashboard/boe", label: "BOE", icon: TrendingUp, color: "bg-cyan-50 text-cyan-600" },
+          { href: "/dashboard/input", label: "Nhập Liệu", icon: BookOpen, color: "bg-blue-50 text-blue-600" },
+          { href: "/dashboard/hr", label: "Nhân Sự", icon: Users, color: "bg-violet-50 text-violet-600" },
+          { href: "/dashboard/facilities", label: "Mặt Bằng", icon: Building, color: "bg-amber-50 text-amber-600" },
+          { href: "/dashboard/forecast", label: "Dự Báo AI", icon: BrainCircuit, color: "bg-emerald-50 text-emerald-600" },
+          { href: "/dashboard/consolidated", label: "Tổng Hợp", icon: BarChart3, color: "bg-pink-50 text-pink-600" },
+          { href: "/dashboard/boe", label: "Hòa Vốn", icon: TrendingUp, color: "bg-cyan-50 text-cyan-600" },
         ].map(t => (
           <Link key={t.href} href={t.href} className="flex flex-col items-center gap-1.5 bg-white rounded-xl border border-slate-200 p-3 hover:shadow-md transition-shadow text-center">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${t.color}`}>

@@ -8,10 +8,10 @@ import type { Invoice, ExpenseCategory } from "@/lib/types";
 import { EXPENSE_CATEGORIES } from "@/lib/types";
 
 const STATUS_CONFIG = {
-    draft: { label: 'Nhap', color: 'bg-slate-100 text-slate-600', icon: FileText },
-    sent: { label: 'Da gui', color: 'bg-blue-100 text-blue-700', icon: Send },
-    paid: { label: 'Da thu', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
-    overdue: { label: 'Qua han', color: 'bg-red-100 text-red-700', icon: AlertTriangle },
+    draft: { label: 'Nháp', color: 'bg-slate-100 text-slate-600', icon: FileText },
+    sent: { label: 'Đã gửi', color: 'bg-blue-100 text-blue-700', icon: Send },
+    paid: { label: 'Đã thu', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
+    overdue: { label: 'Quá hạn', color: 'bg-red-100 text-red-700', icon: AlertTriangle },
 };
 
 export default function InvoicesPage() {
@@ -73,9 +73,9 @@ export default function InvoicesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-blue-600" /> Hoa don & Thu Chi
+                        <FileText className="w-6 h-6 text-blue-600" /> Hóa đơn & Thu Chi
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1">Quan ly moi giao dich thu nhap va chi phi.</p>
+                    <p className="text-sm text-slate-500 mt-1">Quản lý mọi giao dịch thu nhập và chi phí.</p>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={() => { setFormType('income'); setShowForm(true); }} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-emerald-700 transition">
@@ -90,22 +90,22 @@ export default function InvoicesPage() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-400 uppercase">Tong Thu (Da nhan)</p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase">Tổng Thu (Đã nhận)</p>
                     <p className="text-2xl font-black text-emerald-600 mt-1">{formatVND(totalIncome)}</p>
                 </div>
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-400 uppercase">Tong Chi (Da tra)</p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase">Tổng Chi (Đã trả)</p>
                     <p className="text-2xl font-black text-red-600 mt-1">{formatVND(totalExpense)}</p>
                 </div>
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-400 uppercase">Qua han</p>
-                    <p className="text-2xl font-black text-amber-600 mt-1">{totalOverdue} <span className="text-sm font-normal text-slate-400">hoa don</span></p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase">Quá hạn</p>
+                    <p className="text-2xl font-black text-amber-600 mt-1">{totalOverdue} <span className="text-sm font-normal text-slate-400">hóa đơn</span></p>
                 </div>
             </div>
 
             {/* Tabs */}
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-                {([['all', 'Tat ca'], ['income', 'Thu'], ['expense', 'Chi']] as const).map(([key, label]) => (
+                {([['all', 'Tất cả'], ['income', 'Thu'], ['expense', 'Chi']] as const).map(([key, label]) => (
                     <button key={key} onClick={() => setTab(key)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === key ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                     >{label}</button>
@@ -115,26 +115,26 @@ export default function InvoicesPage() {
             {/* Create Form */}
             {showForm && (
                 <form onSubmit={handleAdd} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 className="font-bold text-slate-800">{formType === 'income' ? 'Tao phieu Thu' : 'Tao phieu Chi'}</h3>
+                    <h3 className="font-bold text-slate-800">{formType === 'income' ? 'Tạo phiếu Thu' : 'Tạo phiếu Chi'}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">{formType === 'income' ? 'Khach hang' : 'Nha cung cap'}</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">{formType === 'income' ? 'Khách hàng' : 'Nhà cung cấp'}</label>
                             <input value={contactName} onChange={e => setContactName(e.target.value)} required className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Mo ta</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Mô tả</label>
                             <input value={description} onChange={e => setDescription(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         {formType === 'expense' && (
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Phan loai</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Phân loại</label>
                                 <select value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)} className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
                                     {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
                         )}
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">So tien (VND)</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Số tiền (VND)</label>
                             <input type="number" value={amount || ''} onChange={e => setAmount(Number(e.target.value))} required min={0} className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
@@ -144,23 +144,23 @@ export default function InvoicesPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Ngay</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Ngày</label>
                             <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Han thanh toan</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Hạn thanh toán</label>
                             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 mb-1">Trang thai</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1">Trạng thái</label>
                             <select value={status} onChange={e => setStatus(e.target.value as Invoice['status'])} className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="draft">Nhap</option><option value="sent">Da gui</option><option value="paid">Da thu/tra</option><option value="overdue">Qua han</option>
+                                <option value="draft">Nháp</option><option value="sent">Đã gửi</option><option value="paid">Đã thu/trả</option><option value="overdue">Quá hạn</option>
                             </select>
                         </div>
                     </div>
                     <div className="flex gap-2 pt-2">
-                        <button type="submit" className="px-5 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition">Luu</button>
-                        <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl">Huy</button>
+                        <button type="submit" className="px-5 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition">Lưu</button>
+                        <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl">Hủy</button>
                     </div>
                 </form>
             )}
@@ -170,19 +170,19 @@ export default function InvoicesPage() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="bg-slate-50 text-slate-600 font-semibold">
-                            <th className="text-left px-4 py-3">Ngay</th>
-                            <th className="text-left px-4 py-3">Loai</th>
-                            <th className="text-left px-4 py-3">Doi tac</th>
-                            <th className="text-left px-4 py-3">Phan loai</th>
-                            <th className="text-right px-4 py-3">So tien</th>
+                            <th className="text-left px-4 py-3">Ngày</th>
+                             <th className="text-left px-4 py-3">Loại</th>
+                             <th className="text-left px-4 py-3">Đối tác</th>
+                             <th className="text-left px-4 py-3">Phân loại</th>
+                             <th className="text-right px-4 py-3">Số tiền</th>
                             <th className="text-right px-4 py-3">VAT</th>
-                            <th className="text-center px-4 py-3">Trang thai</th>
+                             <th className="text-center px-4 py-3">Trạng thái</th>
                             <th className="text-center px-4 py-3 w-20"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filtered.length === 0 ? (
-                            <tr><td colSpan={8} className="px-4 py-12 text-center text-slate-400">Chua co hoa don nao. Bam &quot;+ Thu&quot; hoac &quot;+ Chi&quot; de tao.</td></tr>
+                            <tr><td colSpan={8} className="px-4 py-12 text-center text-slate-400">Chưa có hóa đơn nào. Bấm &quot;+ Thu&quot; hoặc &quot;+ Chi&quot; để tạo.</td></tr>
                         ) : filtered.map(inv => {
                             const cfg = STATUS_CONFIG[inv.status];
                             const StatusIcon = cfg.icon;

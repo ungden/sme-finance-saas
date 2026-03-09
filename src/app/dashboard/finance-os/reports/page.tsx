@@ -18,10 +18,10 @@ import {
 type ReportType = "overview" | "allocation" | "departments" | "cashflow" | "planvsactual";
 
 const REPORT_TABS: { key: ReportType; label: string; icon: React.ElementType }[] = [
-    { key: "overview", label: "Tong quan", icon: BarChart3 },
-    { key: "allocation", label: "Phan bo DT", icon: Target },
-    { key: "departments", label: "Phong ban", icon: Building2 },
-    { key: "cashflow", label: "Dong tien", icon: Activity },
+    { key: "overview", label: "Tổng quan", icon: BarChart3 },
+    { key: "allocation", label: "Phân bổ DT", icon: Target },
+    { key: "departments", label: "Phòng ban", icon: Building2 },
+    { key: "cashflow", label: "Dòng tiền", icon: Activity },
     { key: "planvsactual", label: "Plan vs Actual", icon: TrendingUp },
 ];
 
@@ -108,7 +108,7 @@ export default function ReportsPage() {
             pdf.save(`RealProfit_${activeReport}_${dateStr}.pdf`);
         } catch (err) {
             console.error("PDF export failed:", err);
-            alert("Xuat PDF that bai. Vui long thu lai.");
+            alert("Xuất PDF thất bại. Vui lòng thử lại.");
         }
     }, [activeReport]);
 
@@ -116,10 +116,10 @@ export default function ReportsPage() {
         const dateStr = new Date().toISOString().slice(0, 10);
 
         if (activeReport === "overview") {
-            const headers = ["Chi so", "Gia tri"];
+            const headers = ["Chỉ số", "Giá trị"];
             const rows = [
-                ["Doanh thu thang", monthlyRevenue.toString()],
-                ["Tong phan bo %", totalAllocPercent.toFixed(1) + "%"],
+                ["Doanh thu tháng", monthlyRevenue.toString()],
+                ["Tổng phân bổ %", totalAllocPercent.toFixed(1) + "%"],
                 ...allocations.map(a => [
                     ALLOCATION_CATEGORY_LABELS[a.category],
                     `${a.percent}% = ${a.amount}`,
@@ -127,13 +127,13 @@ export default function ReportsPage() {
                 ["Payroll Pool", payrollPool.toString()],
                 ["Marketing Pool", marketingPool.toString()],
                 ["Net Cash Flow", cashflowSummary.netFlow.toString()],
-                ["Cash Runway", cashflowSummary.cashRunway === Infinity ? "An toan" : `${Math.round(cashflowSummary.cashRunway)} ngay`],
+                ["Cash Runway", cashflowSummary.cashRunway === Infinity ? "An toàn" : `${Math.round(cashflowSummary.cashRunway)} ngày`],
             ];
             downloadFile(generateCSV(headers, rows), `RealProfit_TongQuan_${dateStr}.csv`, "text/csv;charset=utf-8");
         }
 
         if (activeReport === "allocation") {
-            const headers = ["Hang muc", "Ty le (%)", "So tien (VND)"];
+            const headers = ["Hạng mục", "Tỷ lệ (%)", "Số tiền (VND)"];
             const rows = allocations.map(a => [
                 ALLOCATION_CATEGORY_LABELS[a.category],
                 a.percent.toString(),
@@ -144,7 +144,7 @@ export default function ReportsPage() {
         }
 
         if (activeReport === "departments") {
-            const headers = ["Phong ban", "% Payroll", "Budget (VND)", "Luong", "Thuong", "Da dung", "Con lai", "Trang thai"];
+            const headers = ["Phòng ban", "% Payroll", "Budget (VND)", "Lương", "Thưởng", "Đã dùng", "Còn lại", "Trạng thái"];
             const rows = departmentBudgets.map(db => [
                 db.department.name,
                 db.department.payroll_percent.toString(),
@@ -153,10 +153,10 @@ export default function ReportsPage() {
                 db.totalBonus.toString(),
                 db.totalUsed.toString(),
                 db.remaining.toString(),
-                db.remaining >= 0 ? "OK" : "Vuot budget",
+                db.remaining >= 0 ? "OK" : "Vượt budget",
             ]);
             // Add employee details
-            const empHeaders = ["Nhan vien", "Phong ban", "Vi tri", "Luong co ban", "Thuong"];
+            const empHeaders = ["Nhân viên", "Phòng ban", "Vị trí", "Lương cơ bản", "Thưởng"];
             const empRows = employees.map(e => {
                 const dept = departments.find(d => d.id === e.department_id);
                 return [e.employee_name, dept?.name || "", e.role, e.base_salary.toString(), e.bonus.toString()];
@@ -169,13 +169,13 @@ export default function ReportsPage() {
             const filtered = dailyCashflow
                 .filter(cf => cf.date.startsWith(filterMonth))
                 .sort((a, b) => a.date.localeCompare(b.date));
-            const headers = ["Ngay", "Thu (VND)", "Chi (VND)", "Net (VND)", "Nguon", "Ghi chu"];
+            const headers = ["Ngày", "Thu (VND)", "Chi (VND)", "Net (VND)", "Nguồn", "Ghi chú"];
             const rows = filtered.map(cf => [
                 cf.date,
                 cf.revenue.toString(),
                 cf.expense.toString(),
                 (cf.revenue - cf.expense).toString(),
-                cf.source === "manual" ? "Nhap tay" : "Tu hoa don",
+                cf.source === "manual" ? "Nhập tay" : "Từ hóa đơn",
                 cf.notes,
             ]);
             const totalRev = filtered.reduce((s, cf) => s + cf.revenue, 0);
@@ -186,9 +186,9 @@ export default function ReportsPage() {
 
         if (activeReport === "planvsactual") {
             if (planVsActual.length === 0) return;
-            const headers = ["Thang", "KH Doanh thu", "Thuc te DT", "Chenh lech", "% Chenh lech", "KH COGS", "KH MKT", "KH Ops", "KH Payroll", "KH Profit"];
+            const headers = ["Tháng", "KH Doanh thu", "Thực tế DT", "Chênh lệch", "% Chênh lệch", "KH COGS", "KH MKT", "KH Ops", "KH Payroll", "KH Profit"];
             const rows = planVsActual.map(m => [
-                `Thang ${m.month}`,
+                `Tháng ${m.month}`,
                 m.planned.revenue.toString(),
                 m.actual.revenue.toString(),
                 m.variance.toString(),
@@ -232,7 +232,7 @@ export default function ReportsPage() {
         return planVsActual.map(m => ({
             name: m.monthLabel,
             "KH Doanh thu": m.planned.revenue,
-            "Thuc te": m.actual.revenue,
+            "Thực tế": m.actual.revenue,
             "KH Profit": m.planned.profit,
         }));
     }, [planVsActual]);
@@ -249,10 +249,10 @@ export default function ReportsPage() {
                 <div className="flex-1">
                     <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <FileDown className="w-5 h-5 text-indigo-600" />
-                        Bao cao & Xuat du lieu
+                        Báo cáo & Xuất dữ liệu
                     </h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Xuat PDF, CSV cho tung module Finance OS
+                        Xuất PDF, CSV cho từng module Finance OS
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -299,20 +299,20 @@ export default function ReportsPage() {
             <div ref={printRef}>
                 {/* Print header (only shows on print) */}
                 <div className="hidden print:block mb-6">
-                    <h1 className="text-2xl font-bold text-slate-900">RealProfit - Bao cao tai chinh</h1>
-                    <p className="text-sm text-slate-500">Ngay xuat: {new Date().toLocaleDateString("vi-VN")}</p>
+                    <h1 className="text-2xl font-bold text-slate-900">RealProfit - Báo cáo tài chính</h1>
+                    <p className="text-sm text-slate-500">Ngày xuất: {new Date().toLocaleDateString("vi-VN")}</p>
                 </div>
 
                 {/* ═══ OVERVIEW REPORT ═══ */}
                 {activeReport === "overview" && (
                     <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-slate-900">Bao cao Tong quan</h2>
+                        <h2 className="text-lg font-bold text-slate-900">Báo cáo Tổng quan</h2>
 
                         {/* KPI Grid */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold text-slate-500 uppercase">Doanh thu thang</span>
+                                    <span className="text-xs font-semibold text-slate-500 uppercase">Doanh thu tháng</span>
                                     <DollarSign className="w-4 h-4 text-blue-500" />
                                 </div>
                                 <div className="text-xl font-bold text-slate-900 tabular-nums">{formatVND(monthlyRevenue)}</div>
@@ -328,15 +328,15 @@ export default function ReportsPage() {
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold text-slate-500 uppercase">Phong ban</span>
+                                    <span className="text-xs font-semibold text-slate-500 uppercase">Phòng ban</span>
                                     <Building2 className="w-4 h-4 text-purple-500" />
                                 </div>
                                 <div className="text-xl font-bold text-slate-900">{departments.length}</div>
-                                <div className="text-xs text-slate-400">{employees.length} nhan vien</div>
+                                <div className="text-xs text-slate-400">{employees.length} nhân viên</div>
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-semibold text-slate-500 uppercase">Kenh MKT</span>
+                                    <span className="text-xs font-semibold text-slate-500 uppercase">Kênh MKT</span>
                                     <Users className="w-4 h-4 text-amber-500" />
                                 </div>
                                 <div className="text-xl font-bold text-slate-900">{marketingChannels.length}</div>
@@ -346,7 +346,7 @@ export default function ReportsPage() {
 
                         {/* Allocation Summary */}
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                            <h3 className="text-sm font-bold text-slate-700 mb-4">Phan bo doanh thu</h3>
+                            <h3 className="text-sm font-bold text-slate-700 mb-4">Phân bổ doanh thu</h3>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     {allocations.map(a => (
@@ -363,7 +363,7 @@ export default function ReportsPage() {
                                     ))}
                                     <div className="h-px bg-slate-200 my-2" />
                                     <div className="flex items-center justify-between text-sm font-bold">
-                                        <span className="text-slate-900">Tong cong</span>
+                                        <span className="text-slate-900">Tổng cộng</span>
                                         <span className="text-slate-900">{totalAllocPercent.toFixed(1)}%</span>
                                     </div>
                                 </div>
@@ -399,16 +399,16 @@ export default function ReportsPage() {
                         {departmentBudgets.length > 0 && (
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="px-5 py-4 border-b border-slate-100">
-                                    <h3 className="text-sm font-bold text-slate-700">Tong hop phong ban</h3>
+                                    <h3 className="text-sm font-bold text-slate-700">Tổng hợp phòng ban</h3>
                                 </div>
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                            <th className="text-left px-5 py-3 font-semibold">Phong ban</th>
+                                             <th className="text-left px-5 py-3 font-semibold">Phòng ban</th>
                                             <th className="text-right px-5 py-3 font-semibold">NV</th>
                                             <th className="text-right px-5 py-3 font-semibold">Budget</th>
-                                            <th className="text-right px-5 py-3 font-semibold">Da dung</th>
-                                            <th className="text-right px-5 py-3 font-semibold">Con lai</th>
+                                             <th className="text-right px-5 py-3 font-semibold">Đã dùng</th>
+                                             <th className="text-right px-5 py-3 font-semibold">Còn lại</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -433,11 +433,11 @@ export default function ReportsPage() {
                 {/* ═══ ALLOCATION REPORT ═══ */}
                 {activeReport === "allocation" && (
                     <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-slate-900">Bao cao Phan bo Doanh thu</h2>
+                        <h2 className="text-lg font-bold text-slate-900">Báo cáo Phân bổ Doanh thu</h2>
 
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                             <div className="text-center mb-6">
-                                <div className="text-xs text-slate-500 mb-1">Doanh thu thang hien tai</div>
+                                <div className="text-xs text-slate-500 mb-1">Doanh thu tháng hiện tại</div>
                                 <div className="text-3xl font-bold text-blue-600 tabular-nums">{formatVND(monthlyRevenue)}</div>
                             </div>
 
@@ -499,7 +499,7 @@ export default function ReportsPage() {
                 {/* ═══ DEPARTMENTS REPORT ═══ */}
                 {activeReport === "departments" && (
                     <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-slate-900">Bao cao Phong ban & Nhan su</h2>
+                        <h2 className="text-lg font-bold text-slate-900">Báo cáo Phòng ban & Nhân sự</h2>
 
                         <div className="grid grid-cols-3 gap-4">
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 text-center">
@@ -507,11 +507,11 @@ export default function ReportsPage() {
                                 <div className="text-xl font-bold text-purple-600 tabular-nums">{formatVND(payrollPool)}</div>
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 text-center">
-                                <div className="text-xs text-slate-500 mb-1">Tong Phong ban</div>
+                                <div className="text-xs text-slate-500 mb-1">Tổng Phòng ban</div>
                                 <div className="text-xl font-bold text-slate-900">{departments.length}</div>
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 text-center">
-                                <div className="text-xs text-slate-500 mb-1">Tong Nhan vien</div>
+                                <div className="text-xs text-slate-500 mb-1">Tổng Nhân viên</div>
                                 <div className="text-xl font-bold text-slate-900">{employees.length}</div>
                             </div>
                         </div>
@@ -527,10 +527,10 @@ export default function ReportsPage() {
                                     </div>
                                     <div className="text-right">
                                         <div className={`text-sm font-bold ${db.remaining >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                                            Con lai: {db.remaining >= 0 ? "" : "-"}{formatVND(Math.abs(db.remaining))}
+                                            Còn lại: {db.remaining >= 0 ? "" : "-"}{formatVND(Math.abs(db.remaining))}
                                         </div>
                                         <div className="text-xs text-slate-400">
-                                            Da dung: {formatVND(db.totalUsed)} / {formatVND(db.budget)}
+                                            Đã dùng: {formatVND(db.totalUsed)} / {formatVND(db.budget)}
                                         </div>
                                     </div>
                                 </div>
@@ -539,11 +539,11 @@ export default function ReportsPage() {
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="bg-slate-50 text-slate-500 text-xs uppercase">
-                                                <th className="text-left px-5 py-2 font-semibold">Nhan vien</th>
-                                                <th className="text-left px-5 py-2 font-semibold">Vi tri</th>
-                                                <th className="text-right px-5 py-2 font-semibold">Luong</th>
-                                                <th className="text-right px-5 py-2 font-semibold">Thuong</th>
-                                                <th className="text-right px-5 py-2 font-semibold">Tong</th>
+                                                <th className="text-left px-5 py-2 font-semibold">Nhân viên</th>
+                                                <th className="text-left px-5 py-2 font-semibold">Vị trí</th>
+                                                <th className="text-right px-5 py-2 font-semibold">Lương</th>
+                                                <th className="text-right px-5 py-2 font-semibold">Thưởng</th>
+                                                <th className="text-right px-5 py-2 font-semibold">Tổng</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -559,7 +559,7 @@ export default function ReportsPage() {
                                         </tbody>
                                     </table>
                                 ) : (
-                                    <div className="px-5 py-4 text-xs text-slate-400">Chua co nhan vien</div>
+                                    <div className="px-5 py-4 text-xs text-slate-400">Chưa có nhân viên</div>
                                 )}
                             </div>
                         ))}
@@ -570,9 +570,9 @@ export default function ReportsPage() {
                 {activeReport === "cashflow" && (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900">Bao cao Dong tien</h2>
+                            <h2 className="text-lg font-bold text-slate-900">Báo cáo Dòng tiền</h2>
                             <div className="flex items-center gap-3 print:hidden">
-                                <label className="text-xs font-semibold text-slate-500">Thang:</label>
+                                <label className="text-xs font-semibold text-slate-500">Tháng:</label>
                                 <input
                                     type="month"
                                     value={filterMonth}
@@ -585,11 +585,11 @@ export default function ReportsPage() {
                         {/* Summary */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                                <div className="text-xs text-slate-500 mb-1">Tong Thu</div>
+                                <div className="text-xs text-slate-500 mb-1">Tổng Thu</div>
                                 <div className="text-xl font-bold text-emerald-600 tabular-nums">{formatVND(cashflowSummary.totalRevenue)}</div>
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                                <div className="text-xs text-slate-500 mb-1">Tong Chi</div>
+                                <div className="text-xs text-slate-500 mb-1">Tổng Chi</div>
                                 <div className="text-xl font-bold text-red-600 tabular-nums">{formatVND(cashflowSummary.totalExpense)}</div>
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
@@ -599,7 +599,7 @@ export default function ReportsPage() {
                                 </div>
                             </div>
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                                <div className="text-xs text-slate-500 mb-1">So ngay du lieu</div>
+                                <div className="text-xs text-slate-500 mb-1">Số ngày dữ liệu</div>
                                 <div className="text-xl font-bold text-slate-900">{cashflowSummary.daysWithData}</div>
                             </div>
                         </div>
@@ -607,7 +607,7 @@ export default function ReportsPage() {
                         {/* Monthly trend chart */}
                         {cashflowMonthly.length > 1 && (
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 print:hidden">
-                                <h3 className="text-sm font-bold text-slate-700 mb-4">Xu huong dong tien theo thang</h3>
+                                <h3 className="text-sm font-bold text-slate-700 mb-4">Xu hướng dòng tiền theo tháng</h3>
                                 <ResponsiveContainer width="100%" height={250}>
                                     <BarChart data={cashflowMonthly}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -634,7 +634,7 @@ export default function ReportsPage() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                        <th className="text-left px-5 py-3 font-semibold">Ngay</th>
+                                         <th className="text-left px-5 py-3 font-semibold">Ngày</th>
                                         <th className="text-right px-5 py-3 font-semibold">Thu</th>
                                         <th className="text-right px-5 py-3 font-semibold">Chi</th>
                                         <th className="text-right px-5 py-3 font-semibold">Net</th>
@@ -668,11 +668,11 @@ export default function ReportsPage() {
                 {/* ═══ PLAN VS ACTUAL REPORT ═══ */}
                 {activeReport === "planvsactual" && (
                     <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-slate-900">Bao cao Plan vs Actual</h2>
+                        <h2 className="text-lg font-bold text-slate-900">Báo cáo Plan vs Actual</h2>
 
                         {!activePlan || planVsActual.length === 0 ? (
                             <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
-                                Chua co ke hoach nao. Tao ke hoach trong
+                                Chưa có kế hoạch nào. Tạo kế hoạch trong
                                 <Link href="/dashboard/finance-os/plan" className="text-blue-600 underline ml-1">AI Planner</Link>
                             </div>
                         ) : (
@@ -689,19 +689,19 @@ export default function ReportsPage() {
                                             </div>
                                         </div>
                                         <div className="bg-emerald-50 rounded-xl p-3">
-                                            <div className="text-[10px] text-emerald-500 font-semibold">KH Loi nhuan</div>
+                                            <div className="text-[10px] text-emerald-500 font-semibold">KH Lợi nhuận</div>
                                             <div className="text-lg font-bold text-emerald-700 tabular-nums">
                                                 {formatVND(activePlanTargets.reduce((s, t) => s + t.profit, 0))}
                                             </div>
                                         </div>
                                         <div className="bg-purple-50 rounded-xl p-3">
-                                            <div className="text-[10px] text-purple-500 font-semibold">Thuc te DT</div>
+                                            <div className="text-[10px] text-purple-500 font-semibold">Thực tế DT</div>
                                             <div className="text-lg font-bold text-purple-700 tabular-nums">
                                                 {formatVND(planVsActual.reduce((s, m) => s + m.actual.revenue, 0))}
                                             </div>
                                         </div>
                                         <div className="bg-slate-50 rounded-xl p-3">
-                                            <div className="text-[10px] text-slate-500 font-semibold">Thuc te CP</div>
+                                            <div className="text-[10px] text-slate-500 font-semibold">Thực tế CP</div>
                                             <div className="text-lg font-bold text-slate-700 tabular-nums">
                                                 {formatVND(planVsActual.reduce((s, m) => s + m.actual.expense, 0))}
                                             </div>
@@ -712,7 +712,7 @@ export default function ReportsPage() {
                                 {/* Chart */}
                                 {planChartData.length > 0 && (
                                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 print:hidden">
-                                        <h3 className="text-sm font-bold text-slate-700 mb-4">Bieu do Plan vs Actual</h3>
+                                        <h3 className="text-sm font-bold text-slate-700 mb-4">Biểu đồ Plan vs Actual</h3>
                                         <ResponsiveContainer width="100%" height={280}>
                                             <BarChart data={planChartData}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -728,7 +728,7 @@ export default function ReportsPage() {
                                                 />
                                                 <Legend />
                                                 <Bar dataKey="KH Doanh thu" fill="#93c5fd" />
-                                                <Bar dataKey="Thuc te" fill="#3b82f6" />
+                                                <Bar dataKey="Thực tế" fill="#3b82f6" />
                                                 <Bar dataKey="KH Profit" fill="#10b981" />
                                             </BarChart>
                                         </ResponsiveContainer>
@@ -740,10 +740,10 @@ export default function ReportsPage() {
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                                <th className="text-left px-4 py-3 font-semibold">Thang</th>
+                                                 <th className="text-left px-4 py-3 font-semibold">Tháng</th>
                                                 <th className="text-right px-4 py-3 font-semibold">KH DT</th>
-                                                <th className="text-right px-4 py-3 font-semibold">Thuc te</th>
-                                                <th className="text-right px-4 py-3 font-semibold">Chenh lech</th>
+                                                 <th className="text-right px-4 py-3 font-semibold">Thực tế</th>
+                                                 <th className="text-right px-4 py-3 font-semibold">Chênh lệch</th>
                                                 <th className="text-right px-4 py-3 font-semibold">%</th>
                                                 <th className="text-right px-4 py-3 font-semibold">KH COGS</th>
                                                 <th className="text-right px-4 py-3 font-semibold">KH MKT</th>

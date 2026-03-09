@@ -90,14 +90,14 @@ export default function CashflowPage() {
                     <ArrowLeft className="w-4 h-4 text-slate-600" />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-xl font-bold text-slate-900">Dong tien hang ngay</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Ghi nhan thu chi moi ngay, theo doi net cash flow</p>
+                    <h1 className="text-xl font-bold text-slate-900">Dòng tiền hàng ngày</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Ghi nhận thu chi mỗi ngày, theo dõi net cash flow</p>
                 </div>
                 <button
                     onClick={() => setShowForm(true)}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition"
                 >
-                    <Plus className="w-4 h-4" /> Them ban ghi
+                    <Plus className="w-4 h-4" /> Thêm bản ghi
                 </button>
             </div>
 
@@ -106,14 +106,14 @@ export default function CashflowPage() {
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
                     <div className="flex items-center gap-2 mb-2">
                         <TrendingUp className="w-4 h-4 text-emerald-500" />
-                        <span className="text-xs text-slate-500 font-medium">Thu thang nay</span>
+                        <span className="text-xs text-slate-500 font-medium">Thu tháng này</span>
                     </div>
                     <div className="text-xl font-bold text-emerald-600 tabular-nums">{formatVND(monthTotals.revenue)}</div>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 p-4">
                     <div className="flex items-center gap-2 mb-2">
                         <TrendingDown className="w-4 h-4 text-red-500" />
-                        <span className="text-xs text-slate-500 font-medium">Chi thang nay</span>
+                        <span className="text-xs text-slate-500 font-medium">Chi tháng này</span>
                     </div>
                     <div className="text-xl font-bold text-red-600 tabular-nums">{formatVND(monthTotals.expense)}</div>
                 </div>
@@ -139,7 +139,7 @@ export default function CashflowPage() {
 
             {/* Month filter */}
             <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-slate-500">Thang:</label>
+                <label className="text-xs font-semibold text-slate-500">Tháng:</label>
                 <input
                     type="month"
                     value={filterMonth}
@@ -151,7 +151,7 @@ export default function CashflowPage() {
             {/* Chart */}
             {cumulativeData.length > 1 && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="text-sm font-bold text-slate-700 mb-4">Bieu do dong tien</h3>
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Biểu đồ dòng tiền</h3>
                     <ResponsiveContainer width="100%" height={280}>
                         <ComposedChart data={cumulativeData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -159,12 +159,12 @@ export default function CashflowPage() {
                             <YAxis tick={{ fontSize: 10 }} tickFormatter={fmtShort} />
                             <Tooltip
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                formatter={(v: any, name: any) => [formatVND(Number(v) || 0), name === "revenue" ? "Thu" : name === "expense" ? "Chi" : name === "net" ? "Net" : "Luy ke"]}
-                                labelFormatter={(l) => `Ngay ${l}`}
+                                formatter={(v: any, name: any) => [formatVND(Number(v) || 0), name === "revenue" ? "Thu" : name === "expense" ? "Chi" : name === "net" ? "Net" : "Lũy kế"]}
+                                labelFormatter={(l) => `Ngày ${l}`}
                             />
                             <Bar dataKey="revenue" fill="#10b981" opacity={0.7} name="Thu" />
                             <Bar dataKey="expense" fill="#ef4444" opacity={0.7} name="Chi" />
-                            <Line type="monotone" dataKey="cumulative" stroke="#3b82f6" strokeWidth={2} dot={false} name="Luy ke" />
+                            <Line type="monotone" dataKey="cumulative" stroke="#3b82f6" strokeWidth={2} dot={false} name="Lũy kế" />
                         </ComposedChart>
                     </ResponsiveContainer>
                 </div>
@@ -173,10 +173,10 @@ export default function CashflowPage() {
             {/* Add form */}
             {showForm && (
                 <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-5 space-y-4">
-                    <h3 className="text-sm font-bold text-slate-700">Them ban ghi moi</h3>
+                    <h3 className="text-sm font-bold text-slate-700">Thêm bản ghi mới</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Ngay</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Ngày</label>
                             <input
                                 type="date"
                                 value={form.date}
@@ -205,14 +205,14 @@ export default function CashflowPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Nguon</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Nguồn</label>
                             <select
                                 value={form.source}
                                 onChange={e => setForm(p => ({ ...p, source: e.target.value as CashflowSource }))}
                                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                             >
-                                <option value="manual">Nhap tay</option>
-                                <option value="invoice">Tu hoa don</option>
+                                <option value="manual">Nhập tay</option>
+                                <option value="invoice">Từ hóa đơn</option>
                             </select>
                         </div>
                     </div>
@@ -222,15 +222,15 @@ export default function CashflowPage() {
                             value={form.notes}
                             onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="VD: Doanh thu ban hang, Thanh toan NCC..."
+                            placeholder="VD: Doanh thu bán hàng, Thanh toán NCC..."
                         />
                     </div>
                     <div className="flex gap-2">
                         <button onClick={handleAdd} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700">
-                            Luu
+                            Lưu
                         </button>
                         <button onClick={() => setShowForm(false)} className="px-5 py-2.5 bg-slate-100 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-200">
-                            Huy
+                            Hủy
                         </button>
                     </div>
                 </div>
@@ -241,11 +241,11 @@ export default function CashflowPage() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                            <th className="text-left px-5 py-3 font-semibold">Ngay</th>
+                            <th className="text-left px-5 py-3 font-semibold">Ngày</th>
                             <th className="text-right px-5 py-3 font-semibold">Thu</th>
                             <th className="text-right px-5 py-3 font-semibold">Chi</th>
                             <th className="text-right px-5 py-3 font-semibold">Net</th>
-                            <th className="text-left px-5 py-3 font-semibold">Nguon</th>
+                            <th className="text-left px-5 py-3 font-semibold">Nguồn</th>
                             <th className="text-left px-5 py-3 font-semibold">Ghi chu</th>
                             <th className="w-10"></th>
                         </tr>
@@ -254,7 +254,7 @@ export default function CashflowPage() {
                         {filteredEntries.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="px-5 py-8 text-center text-slate-400">
-                                    Chua co du lieu cho thang nay. Bam &quot;Them ban ghi&quot; de bat dau.
+                                    Chưa có dữ liệu cho tháng này. Bấm &quot;Thêm bản ghi&quot; để bắt đầu.
                                 </td>
                             </tr>
                         ) : (
@@ -270,7 +270,7 @@ export default function CashflowPage() {
                                         </td>
                                         <td className="px-5 py-3">
                                             <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${cf.source === "manual" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}>
-                                                {cf.source === "manual" ? "Tay" : "Hoa don"}
+                                                {cf.source === "manual" ? "Tay" : "Hóa đơn"}
                                             </span>
                                         </td>
                                         <td className="px-5 py-3 text-slate-500 text-xs max-w-[200px] truncate">{cf.notes}</td>

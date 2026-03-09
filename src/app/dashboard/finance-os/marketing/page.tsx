@@ -60,7 +60,7 @@ export default function MarketingROIPage() {
             .filter(c => c.totalSpend > 0)
             .map(c => ({
                 name: c.channel.name,
-                "Chi phi": c.totalSpend,
+                "Chi phí": c.totalSpend,
                 "Doanh thu": c.totalRevenue,
                 "ROI (%)": Math.round(c.roi),
                 "ROAS": Number(c.roas.toFixed(2)),
@@ -96,14 +96,14 @@ export default function MarketingROIPage() {
                         Marketing ROI Tracker
                     </h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Theo doi chi phi, leads, khach hang, ROI va CAC tren tung kenh
+                        Theo dõi chi phí, leads, khách hàng, ROI và CAC trên từng kênh
                     </p>
                 </div>
                 <button
                     onClick={() => setShowForm(true)}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-orange-600 text-white text-sm font-semibold rounded-xl hover:bg-orange-700 transition"
                 >
-                    <Plus className="w-4 h-4" /> Nhap chi phi
+                    <Plus className="w-4 h-4" /> Nhập chi phí
                 </button>
             </div>
 
@@ -115,7 +115,7 @@ export default function MarketingROIPage() {
                         <DollarSign className="w-4 h-4 text-blue-500" />
                     </div>
                     <div className="text-xl font-bold text-blue-600 tabular-nums">{formatVND(marketingPool)}</div>
-                    <div className="text-xs text-slate-400 mt-1">Da chi: {formatVND(totals.totalSpend)}</div>
+                    <div className="text-xs text-slate-400 mt-1">Đã chi: {formatVND(totals.totalSpend)}</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                     <div className="flex items-center justify-between mb-2">
@@ -133,7 +133,7 @@ export default function MarketingROIPage() {
                         <Users className="w-4 h-4 text-purple-500" />
                     </div>
                     <div className="text-xl font-bold text-purple-600 tabular-nums">{formatVND(totals.avgCAC)}</div>
-                    <div className="text-xs text-slate-400 mt-1">{totals.totalCustomers} khach hang</div>
+                    <div className="text-xs text-slate-400 mt-1">{totals.totalCustomers} khách hàng</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                     <div className="flex items-center justify-between mb-2">
@@ -148,23 +148,23 @@ export default function MarketingROIPage() {
             {/* Add spend form */}
             {showForm && (
                 <div className="bg-white rounded-2xl border border-orange-200 shadow-sm p-5 space-y-4">
-                    <h3 className="text-sm font-bold text-slate-700">Nhap chi phi marketing</h3>
+                    <h3 className="text-sm font-bold text-slate-700">Nhập chi phí marketing</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Kenh</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Kênh</label>
                             <select
                                 value={form.channel_id}
                                 onChange={e => setForm(p => ({ ...p, channel_id: e.target.value }))}
                                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
                             >
-                                <option value="">Chon kenh...</option>
+                                <option value="">Chọn kênh...</option>
                                 {marketingChannels.map(ch => (
                                     <option key={ch.id} value={ch.id}>{ch.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Thang</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Tháng</label>
                             <input
                                 type="month"
                                 value={form.month}
@@ -173,7 +173,7 @@ export default function MarketingROIPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Chi phi (VND)</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Chi phí (VND)</label>
                             <input
                                 type="number"
                                 value={form.spend || ""}
@@ -195,7 +195,7 @@ export default function MarketingROIPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Khach hang moi</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Khách hàng mới</label>
                             <input
                                 type="number"
                                 value={form.customers || ""}
@@ -205,7 +205,7 @@ export default function MarketingROIPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-500 mb-1 block">Doanh thu tu kenh (VND)</label>
+                            <label className="text-xs text-slate-500 mb-1 block">Doanh thu từ kênh (VND)</label>
                             <input
                                 type="number"
                                 value={form.revenue_attributed || ""}
@@ -226,10 +226,10 @@ export default function MarketingROIPage() {
                     </div>
                     <div className="flex gap-2">
                         <button onClick={handleAdd} disabled={!form.channel_id || form.spend <= 0} className="px-5 py-2.5 bg-orange-600 text-white text-sm font-semibold rounded-xl hover:bg-orange-700 disabled:opacity-50">
-                            Luu
+                            Lưu
                         </button>
                         <button onClick={() => setShowForm(false)} className="px-5 py-2.5 bg-slate-100 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-200">
-                            Huy
+                            Hủy
                         </button>
                     </div>
                 </div>
@@ -238,7 +238,7 @@ export default function MarketingROIPage() {
             {/* Channel ROI cards */}
             {channelROIs.length > 0 && (
                 <section>
-                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Hieu qua tung kenh</h2>
+                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Hiệu quả từng kênh</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {channelROIs.map(c => {
                             const budgetUsage = c.budget > 0 ? (c.totalSpend / c.budget) * 100 : 0;
@@ -262,7 +262,7 @@ export default function MarketingROIPage() {
                                         <>
                                             <div className="grid grid-cols-4 gap-2 text-center mb-3">
                                                 <div>
-                                                    <div className="text-[10px] text-slate-400 uppercase">Chi phi</div>
+                                                    <div className="text-[10px] text-slate-400 uppercase">Chi phí</div>
                                                     <div className="text-sm font-bold text-red-600 tabular-nums">{formatVND(c.totalSpend)}</div>
                                                 </div>
                                                 <div>
@@ -290,7 +290,7 @@ export default function MarketingROIPage() {
                                             {/* Budget usage bar */}
                                             <div className="mt-3">
                                                 <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                                                    <span>Da chi / Budget</span>
+                                                    <span>Đã chi / Budget</span>
                                                     <span>{budgetUsage.toFixed(0)}%</span>
                                                 </div>
                                                 <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -302,7 +302,7 @@ export default function MarketingROIPage() {
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="text-xs text-slate-400 py-2">Chua co du lieu chi phi. Bam &quot;Nhap chi phi&quot; de bat dau.</div>
+                                        <div className="text-xs text-slate-400 py-2">Chưa có dữ liệu chi phí. Bấm &quot;Nhập chi phí&quot; để bắt đầu.</div>
                                     )}
                                 </div>
                             );
@@ -314,7 +314,7 @@ export default function MarketingROIPage() {
             {/* Channel comparison chart */}
             {channelChartData.length > 0 && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="text-sm font-bold text-slate-700 mb-4">So sanh hieu qua kenh</h3>
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">So sánh hiệu quả kênh</h3>
                     <ResponsiveContainer width="100%" height={280}>
                         <ComposedChart data={channelChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -334,7 +334,7 @@ export default function MarketingROIPage() {
                                 }}
                             />
                             <Legend />
-                            <Bar yAxisId="left" dataKey="Chi phi" fill="#ef4444" opacity={0.7} />
+                            <Bar yAxisId="left" dataKey="Chi phí" fill="#ef4444" opacity={0.7} />
                             <Bar yAxisId="left" dataKey="Doanh thu" fill="#10b981" opacity={0.7} />
                             <Line yAxisId="right" type="monotone" dataKey="ROI (%)" stroke="#8b5cf6" strokeWidth={2} dot />
                         </ComposedChart>
@@ -345,7 +345,7 @@ export default function MarketingROIPage() {
             {/* Monthly trend */}
             {monthlyTrend.length > 1 && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="text-sm font-bold text-slate-700 mb-4">Xu huong chi phi MKT theo thang</h3>
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Xu hướng chi phí MKT theo tháng</h3>
                     <ResponsiveContainer width="100%" height={250}>
                         <BarChart data={monthlyTrend}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -357,10 +357,10 @@ export default function MarketingROIPage() {
                             }} />
                             <Tooltip
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                formatter={(v: any, name: any) => [name === "spend" ? formatVND(Number(v)) : v, name === "spend" ? "Chi phi" : name === "revenue" ? "Doanh thu" : name]}
+                                formatter={(v: any, name: any) => [name === "spend" ? formatVND(Number(v)) : v, name === "spend" ? "Chi phí" : name === "revenue" ? "Doanh thu" : name]}
                             />
                             <Legend />
-                            <Bar dataKey="spend" fill="#ef4444" name="Chi phi" />
+                            <Bar dataKey="spend" fill="#ef4444" name="Chi phí" />
                             <Bar dataKey="revenue" fill="#10b981" name="Doanh thu" />
                         </BarChart>
                     </ResponsiveContainer>
@@ -371,14 +371,14 @@ export default function MarketingROIPage() {
             {marketingSpend.length > 0 && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-slate-100">
-                        <h3 className="text-sm font-bold text-slate-700">Lich su chi phi</h3>
+                        <h3 className="text-sm font-bold text-slate-700">Lịch sử chi phí</h3>
                     </div>
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                <th className="text-left px-5 py-3 font-semibold">Thang</th>
-                                <th className="text-left px-5 py-3 font-semibold">Kenh</th>
-                                <th className="text-right px-5 py-3 font-semibold">Chi phi</th>
+                                <th className="text-left px-5 py-3 font-semibold">Tháng</th>
+                                <th className="text-left px-5 py-3 font-semibold">Kênh</th>
+                                <th className="text-right px-5 py-3 font-semibold">Chi phí</th>
                                 <th className="text-right px-5 py-3 font-semibold">Leads</th>
                                 <th className="text-right px-5 py-3 font-semibold">KH</th>
                                 <th className="text-right px-5 py-3 font-semibold">DT</th>
@@ -420,8 +420,8 @@ export default function MarketingROIPage() {
             {/* Empty state */}
             {marketingChannels.length === 0 && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
-                    Chua co kenh marketing nao. Tao kenh trong
-                    <Link href="/dashboard/finance-os/departments" className="text-blue-600 underline ml-1">Phong ban & Kenh</Link>
+                    Chưa có kênh marketing nào. Tạo kênh trong
+                    <Link href="/dashboard/finance-os/departments" className="text-blue-600 underline ml-1">Phòng ban & Kênh</Link>
                 </div>
             )}
         </div>

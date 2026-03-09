@@ -41,9 +41,9 @@ export default function AuditPage() {
         <div className="space-y-6 max-w-[1000px] mx-auto pb-20">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <Clock className="w-6 h-6 text-purple-600" /> Nhat ky Hoat dong
+                    <Clock className="w-6 h-6 text-purple-600" /> Nhật ký Hoạt động
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">Lich su thay doi du lieu boi tat ca thanh vien.</p>
+                <p className="text-sm text-slate-500 mt-1">Lịch sử thay đổi dữ liệu bởi tất cả thành viên.</p>
             </div>
 
             {/* Filter */}
@@ -51,7 +51,7 @@ export default function AuditPage() {
                 {['all', 'invoice', 'employee', 'facility', 'yearData', 'contact', 'product', 'budget'].map(key => (
                     <button key={key} onClick={() => setFilter(key)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${filter === key ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                    >{key === 'all' ? 'Tat ca' : key === 'invoice' ? 'Hoa don' : key === 'employee' ? 'Nhan su' : key === 'facility' ? 'Mat bang' : key === 'yearData' ? 'Tai chinh' : key === 'contact' ? 'Lien he' : key === 'product' ? 'San pham' : 'Ngan sach'}</button>
+                    >{key === 'all' ? 'Tất cả' : key === 'invoice' ? 'Hóa đơn' : key === 'employee' ? 'Nhân sự' : key === 'facility' ? 'Mặt bằng' : key === 'yearData' ? 'Tài chính' : key === 'contact' ? 'Liên hệ' : key === 'product' ? 'Sản phẩm' : 'Ngân sách'}</button>
                 ))}
             </div>
 
@@ -59,8 +59,8 @@ export default function AuditPage() {
             {filtered.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                     <Clock className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-600 mb-2">Chua co hoat dong nao</h3>
-                    <p className="text-sm text-slate-400">Nhat ky se tu dong ghi nhan khi co thay doi du lieu.</p>
+                    <h3 className="text-lg font-bold text-slate-600 mb-2">Chưa có hoạt động nào</h3>
+                    <p className="text-sm text-slate-400">Nhật ký sẽ tự động ghi nhận khi có thay đổi dữ liệu.</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -72,7 +72,7 @@ export default function AuditPage() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}>
-                                        {ACTION_ICONS[log.action]} {log.action === 'create' ? 'Tao' : log.action === 'update' ? 'Sua' : 'Xoa'}
+                                        {ACTION_ICONS[log.action]} {log.action === 'create' ? 'Tạo' : log.action === 'update' ? 'Sửa' : 'Xóa'}
                                     </span>
                                     <span className="text-sm text-slate-900 font-medium">{log.description}</span>
                                 </div>

@@ -14,10 +14,10 @@ import {
 import type { ForecastScenario, ForecastMonth, ForecastAssumptions } from "@/lib/types";
 
 const SCENARIO_CONFIG: Record<ForecastScenario, { label: string; color: string; bg: string }> = {
-    base: { label: "Co so", color: "text-blue-600", bg: "bg-blue-50" },
-    optimistic: { label: "Lac quan", color: "text-emerald-600", bg: "bg-emerald-50" },
-    pessimistic: { label: "Than trong", color: "text-red-600", bg: "bg-red-50" },
-    custom: { label: "Tuy chinh", color: "text-purple-600", bg: "bg-purple-50" },
+    base: { label: "Cơ sở", color: "text-blue-600", bg: "bg-blue-50" },
+    optimistic: { label: "Lạc quan", color: "text-emerald-600", bg: "bg-emerald-50" },
+    pessimistic: { label: "Thận trọng", color: "text-red-600", bg: "bg-red-50" },
+    custom: { label: "Tùy chỉnh", color: "text-purple-600", bg: "bg-purple-50" },
 };
 
 interface AIForecastResponse {
@@ -39,7 +39,7 @@ export default function CashflowForecastPage() {
     const [saving, setSaving] = useState(false);
     const [aiResult, setAiResult] = useState<AIForecastResponse | null>(null);
     const [form, setForm] = useState({
-        name: "Du bao dong tien",
+        name: "Dự báo dòng tiền",
         scenario: "base" as ForecastScenario,
         forecastMonths: 6,
         industry: "",
@@ -79,7 +79,7 @@ export default function CashflowForecastPage() {
             });
             if (!res.ok) {
                 const err = await res.json();
-                alert(err.error || "Loi khi tao du bao");
+                alert(err.error || "Lỗi khi tạo dự báo");
                 return;
             }
             const data: AIForecastResponse = await res.json();
@@ -109,7 +109,7 @@ export default function CashflowForecastPage() {
             setAiResult(null);
         } catch (err) {
             console.error("Save forecast error:", err);
-            alert("Khong the luu du bao. Thu lai.");
+            alert("Không thể lưu dự báo. Thử lại.");
         } finally {
             setSaving(false);
         }
@@ -120,18 +120,18 @@ export default function CashflowForecastPage() {
         if (!activeForecast) return [];
         const hist = historicalMonthly.map(m => ({
             month: m.month,
-            "DT Thuc te": m.revenue,
-            "CP Thuc te": m.expense,
-            "DT Du bao": null as number | null,
-            "CP Du bao": null as number | null,
+            "DT Thực tế": m.revenue,
+            "CP Thực tế": m.expense,
+            "DT Dự báo": null as number | null,
+            "CP Dự báo": null as number | null,
             confidence: null as number | null,
         }));
         const forecast = activeForecast.monthly_data.map(m => ({
             month: m.month,
-            "DT Thuc te": null as number | null,
-            "CP Thuc te": null as number | null,
-            "DT Du bao": m.revenue,
-            "CP Du bao": m.expense,
+            "DT Thực tế": null as number | null,
+            "CP Thực tế": null as number | null,
+            "DT Dự báo": m.revenue,
+            "CP Dự báo": m.expense,
             confidence: m.confidence,
         }));
         return [...hist.slice(-6), ...forecast];
@@ -152,13 +152,13 @@ export default function CashflowForecastPage() {
         if (!aiResult) return [];
         const hist = historicalMonthly.slice(-6).map(m => ({
             month: m.month.slice(5),
-            "Lich su": m.revenue,
-            "Du bao": null as number | null,
+            "Lịch sử": m.revenue,
+            "Dự báo": null as number | null,
         }));
         const forecast = aiResult.monthly_data.map(m => ({
             month: m.month.slice(5),
-            "Lich su": null as number | null,
-            "Du bao": m.revenue,
+            "Lịch sử": null as number | null,
+            "Dự báo": m.revenue,
         }));
         return [...hist, ...forecast];
     }, [historicalMonthly, aiResult]);
@@ -175,17 +175,17 @@ export default function CashflowForecastPage() {
                 <div className="flex-1">
                     <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <LineChartIcon className="w-5 h-5 text-cyan-600" />
-                        Du bao dong tien (Cash Flow Forecast)
+                        Dự báo dòng tiền (Cash Flow Forecast)
                     </h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        AI du bao tu lich su dong tien &rarr; 3 kich ban &rarr; Do tin cay
+                        AI dự báo từ lịch sử dòng tiền &rarr; 3 kịch bản &rarr; Độ tin cậy
                     </p>
                 </div>
                 <button
                     onClick={() => setShowCreate(true)}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-cyan-600 text-white text-sm font-semibold rounded-xl hover:bg-cyan-700 transition"
                 >
-                    <Plus className="w-4 h-4" /> Tao du bao
+                    <Plus className="w-4 h-4" /> Tạo dự báo
                 </button>
             </div>
 
@@ -198,7 +198,7 @@ export default function CashflowForecastPage() {
                             ? historicalMonthly.reduce((s, m) => s + m.revenue, 0) / historicalMonthly.length
                             : 0)}
                     </div>
-                    <div className="text-xs text-slate-400 mt-1">{historicalMonthly.length} thang lich su</div>
+                    <div className="text-xs text-slate-400 mt-1">{historicalMonthly.length} tháng lịch sử</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                     <div className="text-xs font-semibold text-slate-500 uppercase mb-2">CP TB/thang</div>
@@ -222,7 +222,7 @@ export default function CashflowForecastPage() {
                     })()}
                 </div>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                    <div className="text-xs font-semibold text-slate-500 uppercase mb-2">Du bao da luu</div>
+                    <div className="text-xs font-semibold text-slate-500 uppercase mb-2">Dự báo đã lưu</div>
                     <div className="text-xl font-bold text-slate-900">{forecasts.length}</div>
                 </div>
             </div>
@@ -230,7 +230,7 @@ export default function CashflowForecastPage() {
             {/* Saved forecasts switcher */}
             {forecasts.length > 0 && (
                 <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs font-semibold text-slate-500">Du bao:</span>
+                    <span className="text-xs font-semibold text-slate-500">Dự báo:</span>
                     {forecasts.map(f => {
                         const sc = SCENARIO_CONFIG[f.scenario as ForecastScenario] || SCENARIO_CONFIG.base;
                         const isActive = f.id === activeForecast?.id;
@@ -249,7 +249,7 @@ export default function CashflowForecastPage() {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (confirm("Xoa du bao nay?")) fos.removeForecast(f.id);
+                                        if (confirm("Xóa dự báo này?")) fos.removeForecast(f.id);
                                     }}
                                     className="text-slate-300 hover:text-red-500 ml-1"
                                 >
@@ -266,46 +266,46 @@ export default function CashflowForecastPage() {
                 <div className="bg-white rounded-2xl border border-cyan-200 shadow-lg p-6 space-y-5">
                     <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <LineChartIcon className="w-5 h-5 text-cyan-600" />
-                        Tao du bao dong tien
+                        Tạo dự báo dòng tiền
                     </h2>
 
                     {historicalMonthly.length === 0 ? (
                         <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 shrink-0" />
-                            Chua co du lieu dong tien. Hay nhap du lieu trong
-                            <Link href="/dashboard/finance-os/cashflow" className="underline font-semibold">Dong tien</Link>
-                            truoc.
+                            Chưa có dữ liệu dòng tiền. Hãy nhập dữ liệu trong
+                            <Link href="/dashboard/finance-os/cashflow" className="underline font-semibold">Dòng tiền</Link>
+                            trước.
                         </div>
                     ) : (
                         <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Ten du bao</label>
+                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Tên dự báo</label>
                                     <input
                                         value={form.name}
                                         onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
-                                        placeholder="VD: Du bao Q3-Q4 2026"
+                                        placeholder="VD: Dự báo Q3-Q4 2026"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">So thang du bao</label>
+                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Số tháng dự báo</label>
                                     <select
                                         value={form.forecastMonths}
                                         onChange={e => setForm(p => ({ ...p, forecastMonths: Number(e.target.value) }))}
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
                                     >
-                                        <option value={3}>3 thang</option>
-                                        <option value={6}>6 thang</option>
-                                        <option value={9}>9 thang</option>
-                                        <option value={12}>12 thang</option>
+                                        <option value={3}>3 tháng</option>
+                                        <option value={6}>6 tháng</option>
+                                        <option value={9}>9 tháng</option>
+                                        <option value={12}>12 tháng</option>
                                     </select>
                                 </div>
                             </div>
 
                             {/* Scenario buttons */}
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 mb-2 block">Kich ban</label>
+                                <label className="text-xs font-semibold text-slate-500 mb-2 block">Kịch bản</label>
                                 <div className="flex gap-2">
                                     {(["base", "optimistic", "pessimistic"] as ForecastScenario[]).map(s => {
                                         const sc = SCENARIO_CONFIG[s];
@@ -328,30 +328,30 @@ export default function CashflowForecastPage() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Nganh nghe</label>
+                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Ngành nghề</label>
                                     <select
                                         value={form.industry}
                                         onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
                                     >
-                                        <option value="">Chon nganh...</option>
+                                        <option value="">Chọn ngành...</option>
                                         <option value="F&B">F&B</option>
-                                        <option value="Retail">Ban le</option>
-                                        <option value="E-commerce">TMDT</option>
+                                        <option value="Retail">Bán lẻ</option>
+                                        <option value="E-commerce">TMĐT</option>
                                         <option value="SaaS">SaaS</option>
-                                        <option value="Education">Giao duc</option>
-                                        <option value="Healthcare">Y te</option>
-                                        <option value="Manufacturing">San xuat</option>
-                                        <option value="Services">Dich vu</option>
+                                        <option value="Education">Giáo dục</option>
+                                        <option value="Healthcare">Y tế</option>
+                                        <option value="Manufacturing">Sản xuất</option>
+                                        <option value="Services">Dịch vụ</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Boi canh (tuy chon)</label>
+                                    <label className="text-xs font-semibold text-slate-500 mb-1 block">Bối cảnh (tùy chọn)</label>
                                     <input
                                         value={form.context}
                                         onChange={e => setForm(p => ({ ...p, context: e.target.value }))}
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
-                                        placeholder="VD: Dang mo rong, mua cao diem..."
+                                        placeholder="VD: Đang mở rộng, mùa cao điểm..."
                                     />
                                 </div>
                             </div>
@@ -363,16 +363,16 @@ export default function CashflowForecastPage() {
                                     className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 text-white text-sm font-semibold rounded-xl hover:bg-cyan-700 transition disabled:opacity-50"
                                 >
                                     {generating ? (
-                                        <><Loader2 className="w-4 h-4 animate-spin" /> AI dang du bao...</>
+                                        <><Loader2 className="w-4 h-4 animate-spin" /> AI đang dự báo...</>
                                     ) : (
-                                        <><LineChartIcon className="w-4 h-4" /> Tao du bao</>
+                                        <><LineChartIcon className="w-4 h-4" /> Tạo dự báo</>
                                     )}
                                 </button>
                                 <button
                                     onClick={() => { setShowCreate(false); setAiResult(null); }}
                                     className="px-4 py-2.5 bg-slate-100 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-200"
                                 >
-                                    Huy
+                                    Hủy
                                 </button>
                             </div>
 
@@ -412,8 +412,8 @@ export default function CashflowForecastPage() {
                                                         formatter={(v: any) => formatVND(Number(v) || 0)}
                                                     />
                                                     <Legend />
-                                                    <Bar dataKey="Lich su" fill="#94a3b8" />
-                                                    <Bar dataKey="Du bao" fill="#06b6d4" />
+                                    <Bar dataKey="Lịch sử" fill="#94a3b8" />
+                                    <Bar dataKey="Dự báo" fill="#06b6d4" />
                                                 </ComposedChart>
                                             </ResponsiveContainer>
                                         </div>
@@ -424,11 +424,11 @@ export default function CashflowForecastPage() {
                                         <table className="w-full text-xs">
                                             <thead>
                                                 <tr className="bg-slate-50 text-slate-500 uppercase">
-                                                    <th className="text-left px-3 py-2">Thang</th>
-                                                    <th className="text-right px-3 py-2">Doanh thu</th>
-                                                    <th className="text-right px-3 py-2">Chi phi</th>
-                                                    <th className="text-right px-3 py-2">Net</th>
-                                                    <th className="text-right px-3 py-2">Do tin cay</th>
+                                                     <th className="text-left px-3 py-2">Tháng</th>
+                                                     <th className="text-right px-3 py-2">Doanh thu</th>
+                                                     <th className="text-right px-3 py-2">Chi phí</th>
+                                                     <th className="text-right px-3 py-2">Net</th>
+                                                     <th className="text-right px-3 py-2">Độ tin cậy</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -461,10 +461,10 @@ export default function CashflowForecastPage() {
                                         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition disabled:opacity-50"
                                     >
                                         {saving ? (
-                                            <><Loader2 className="w-4 h-4 animate-spin" /> Dang luu...</>
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> Đang lưu...</>
                                         ) : (
-                                            <><CheckCircle className="w-4 h-4" /> Luu du bao nay</>
-                                        )}
+                                <><CheckCircle className="w-4 h-4" /> Lưu dự báo này</>
+                            )}
                                     </button>
                                 </div>
                             )}
@@ -490,21 +490,21 @@ export default function CashflowForecastPage() {
                         {forecastTotals && (
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                                 <div className="bg-blue-50 rounded-xl p-3">
-                                    <div className="text-[10px] text-blue-500 font-semibold uppercase">DT Du bao</div>
+                                    <div className="text-[10px] text-blue-500 font-semibold uppercase">DT Dự báo</div>
                                     <div className="text-lg font-bold text-blue-700 tabular-nums">{formatVND(forecastTotals.totalRev)}</div>
                                 </div>
                                 <div className="bg-red-50 rounded-xl p-3">
-                                    <div className="text-[10px] text-red-500 font-semibold uppercase">CP Du bao</div>
+                                    <div className="text-[10px] text-red-500 font-semibold uppercase">CP Dự báo</div>
                                     <div className="text-lg font-bold text-red-700 tabular-nums">{formatVND(forecastTotals.totalExp)}</div>
                                 </div>
                                 <div className={`rounded-xl p-3 ${forecastTotals.net >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-                                    <div className="text-[10px] text-slate-500 font-semibold uppercase">Net Du bao</div>
+                                    <div className="text-[10px] text-slate-500 font-semibold uppercase">Net Dự báo</div>
                                     <div className={`text-lg font-bold tabular-nums ${forecastTotals.net >= 0 ? "text-emerald-700" : "text-red-700"}`}>
                                         {formatVND(forecastTotals.net)}
                                     </div>
                                 </div>
                                 <div className="bg-purple-50 rounded-xl p-3">
-                                    <div className="text-[10px] text-purple-500 font-semibold uppercase">Do tin cay TB</div>
+                                    <div className="text-[10px] text-purple-500 font-semibold uppercase">Độ tin cậy TB</div>
                                     <div className="text-lg font-bold text-purple-700 tabular-nums">
                                         {(forecastTotals.avgConfidence * 100).toFixed(0)}%
                                     </div>
@@ -516,7 +516,7 @@ export default function CashflowForecastPage() {
                     {/* Combined chart: historical + forecast */}
                     {combinedChartData.length > 0 && (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                            <h3 className="text-sm font-bold text-slate-700 mb-4">Lich su & Du bao</h3>
+                            <h3 className="text-sm font-bold text-slate-700 mb-4">Lịch sử & Dự báo</h3>
                             <ResponsiveContainer width="100%" height={300}>
                                 <ComposedChart data={combinedChartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -531,10 +531,10 @@ export default function CashflowForecastPage() {
                                         formatter={(v: any, name: any) => v != null ? [formatVND(Number(v)), name] : ["-", name]}
                                     />
                                     <Legend />
-                                    <Bar dataKey="DT Thuc te" fill="#94a3b8" />
-                                    <Bar dataKey="DT Du bao" fill="#06b6d4" />
-                                    <Line type="monotone" dataKey="CP Thuc te" stroke="#ef4444" strokeWidth={1.5} dot={false} connectNulls={false} />
-                                    <Line type="monotone" dataKey="CP Du bao" stroke="#f97316" strokeWidth={1.5} strokeDasharray="5 5" dot={false} connectNulls={false} />
+                                    <Bar dataKey="DT Thực tế" fill="#94a3b8" />
+                                    <Bar dataKey="DT Dự báo" fill="#06b6d4" />
+                                    <Line type="monotone" dataKey="CP Thực tế" stroke="#ef4444" strokeWidth={1.5} dot={false} connectNulls={false} />
+                                    <Line type="monotone" dataKey="CP Dự báo" stroke="#f97316" strokeWidth={1.5} strokeDasharray="5 5" dot={false} connectNulls={false} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>
@@ -543,7 +543,7 @@ export default function CashflowForecastPage() {
                     {/* Confidence area chart */}
                     {activeForecast.monthly_data.length > 0 && (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                            <h3 className="text-sm font-bold text-slate-700 mb-4">Net cash flow du bao & Do tin cay</h3>
+                            <h3 className="text-sm font-bold text-slate-700 mb-4">Net cash flow dự báo & Độ tin cậy</h3>
                             <ResponsiveContainer width="100%" height={220}>
                                 <AreaChart data={activeForecast.monthly_data.map(m => ({
                                     month: m.month.slice(5),
@@ -555,7 +555,7 @@ export default function CashflowForecastPage() {
                                     <YAxis tick={{ fontSize: 10 }} />
                                     <Tooltip
                                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        formatter={(v: any, name: any) => name === "confidence" ? [`${Number(v).toFixed(0)}%`, "Do tin cay"] : [formatVND(Number(v) || 0), "Net"]}
+                                        formatter={(v: any, name: any) => name === "confidence" ? [`${Number(v).toFixed(0)}%`, "Độ tin cậy"] : [formatVND(Number(v) || 0), "Net"]}
                                     />
                                     <Area type="monotone" dataKey="net" fill="#06b6d4" fillOpacity={0.15} stroke="#06b6d4" strokeWidth={2} />
                                     <Area type="monotone" dataKey="confidence" fill="#8b5cf6" fillOpacity={0.1} stroke="#8b5cf6" strokeWidth={1.5} strokeDasharray="4 4" />
@@ -569,12 +569,12 @@ export default function CashflowForecastPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                    <th className="text-left px-4 py-3 font-semibold">Thang</th>
+                                    <th className="text-left px-4 py-3 font-semibold">Tháng</th>
                                     <th className="text-right px-4 py-3 font-semibold">Doanh thu</th>
-                                    <th className="text-right px-4 py-3 font-semibold">Chi phi</th>
+                                    <th className="text-right px-4 py-3 font-semibold">Chi phí</th>
                                     <th className="text-right px-4 py-3 font-semibold">Net</th>
-                                    <th className="text-right px-4 py-3 font-semibold">Do tin cay</th>
-                                    <th className="text-center px-4 py-3 font-semibold">Xu huong</th>
+                                    <th className="text-right px-4 py-3 font-semibold">Độ tin cậy</th>
+                                    <th className="text-center px-4 py-3 font-semibold">Xu hướng</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -613,14 +613,14 @@ export default function CashflowForecastPage() {
                     {/* Assumptions */}
                     {activeForecast.assumptions && (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                            <h3 className="text-sm font-bold text-slate-700 mb-3">Gia dinh du bao</h3>
+                            <h3 className="text-sm font-bold text-slate-700 mb-3">Giả định dự báo</h3>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <span className="text-slate-500">Tang truong:</span>{" "}
+                                    <span className="text-slate-500">Tăng trưởng:</span>{" "}
                                     <span className="font-semibold">{typeof activeForecast.assumptions.growth_rate === "number" ? activeForecast.assumptions.growth_rate.toFixed(1) : 0}%</span>
                                 </div>
                                 <div>
-                                    <span className="text-slate-500">So thang:</span>{" "}
+                                    <span className="text-slate-500">Số tháng:</span>{" "}
                                     <span className="font-semibold">{activeForecast.forecast_months}</span>
                                 </div>
                             </div>
@@ -636,16 +636,16 @@ export default function CashflowForecastPage() {
             {forecasts.length === 0 && !showCreate && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                     <LineChartIcon className="w-12 h-12 text-cyan-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-700 mb-2">Chua co du bao nao</h3>
+                    <h3 className="text-lg font-bold text-slate-700 mb-2">Chưa có dự báo nào</h3>
                     <p className="text-sm text-slate-500 max-w-md mx-auto mb-4">
-                        AI se phan tich du lieu dong tien lich su va du bao doanh thu, chi phi cho cac thang tiep theo.
-                        Ho tro 3 kich ban: Co so, Lac quan, Than trong.
+                        AI sẽ phân tích dữ liệu dòng tiền lịch sử và dự báo doanh thu, chi phí cho các tháng tiếp theo.
+                        Hỗ trợ 3 kịch bản: Cơ sở, Lạc quan, Thận trọng.
                     </p>
                     <button
                         onClick={() => setShowCreate(true)}
                         className="inline-flex items-center gap-2 px-5 py-3 bg-cyan-600 text-white font-semibold rounded-xl hover:bg-cyan-700 transition"
                     >
-                        <LineChartIcon className="w-5 h-5" /> Tao du bao dau tien
+                        <LineChartIcon className="w-5 h-5" /> Tạo dự báo đầu tiên
                     </button>
                 </div>
             )}

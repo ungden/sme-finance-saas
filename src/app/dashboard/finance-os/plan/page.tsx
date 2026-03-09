@@ -14,13 +14,13 @@ import {
 import type { AIPlanResponse, PlanStatus } from "@/lib/types";
 
 const MONTH_LABELS = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
-const MONTH_FULL = ["Thang 1", "Thang 2", "Thang 3", "Thang 4", "Thang 5", "Thang 6",
-    "Thang 7", "Thang 8", "Thang 9", "Thang 10", "Thang 11", "Thang 12"];
+const MONTH_FULL = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+    "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
 
 const STATUS_CONFIG: Record<PlanStatus, { label: string; color: string; icon: React.ElementType }> = {
-    draft: { label: "Nhap", color: "bg-slate-100 text-slate-600", icon: Clock },
-    active: { label: "Hoat dong", color: "bg-emerald-50 text-emerald-600", icon: CheckCircle },
-    archived: { label: "Luu tru", color: "bg-amber-50 text-amber-600", icon: Archive },
+    draft: { label: "Nháp", color: "bg-slate-100 text-slate-600", icon: Clock },
+    active: { label: "Hoạt động", color: "bg-emerald-50 text-emerald-600", icon: CheckCircle },
+    archived: { label: "Lưu trữ", color: "bg-amber-50 text-amber-600", icon: Archive },
 };
 
 export default function AIPlannerPage() {
@@ -36,7 +36,7 @@ export default function AIPlannerPage() {
     const [creating, setCreating] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [form, setForm] = useState({
-        name: `Ke hoach ${new Date().getFullYear()}`,
+        name: `Kế hoạch ${new Date().getFullYear()}`,
         year: new Date().getFullYear(),
         annualRevenue: 0,
         industry: "",
@@ -67,14 +67,14 @@ export default function AIPlannerPage() {
             });
             if (!res.ok) {
                 const err = await res.json();
-                alert(err.error || "Loi khi tao ke hoach");
+                alert(err.error || "Lỗi khi tạo kế hoạch");
                 return;
             }
             const data: AIPlanResponse = await res.json();
             setAiResult(data);
         } catch (err) {
             console.error("AI Plan error:", err);
-            alert("Khong the ket noi AI. Vui long thu lai.");
+            alert("Không thể kết nối AI. Vui lòng thử lại.");
         } finally {
             setGenerating(false);
         }
@@ -97,7 +97,7 @@ export default function AIPlannerPage() {
             setShowCreate(false);
             setAiResult(null);
             setForm({
-                name: `Ke hoach ${new Date().getFullYear()}`,
+                name: `Kế hoạch ${new Date().getFullYear()}`,
                 year: new Date().getFullYear(),
                 annualRevenue: 0,
                 industry: "",
@@ -105,7 +105,7 @@ export default function AIPlannerPage() {
             });
         } catch (err) {
             console.error("Save plan error:", err);
-            alert("Khong the luu ke hoach. Thu lai.");
+            alert("Không thể lưu kế hoạch. Thử lại.");
         } finally {
             setCreating(false);
         }
@@ -162,8 +162,8 @@ export default function AIPlannerPage() {
         return planVsActual.map(m => ({
             name: m.monthLabel,
             "KH Doanh thu": m.planned.revenue,
-            "Thuc te": m.actual.revenue,
-            "KH Loi nhuan": m.planned.profit,
+            "Thực tế": m.actual.revenue,
+            "KH Lợi nhuận": m.planned.profit,
         }));
     }, [planVsActual]);
 
@@ -197,21 +197,21 @@ export default function AIPlannerPage() {
                         AI Financial Planner
                     </h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        AI lap ke hoach 12 thang &rarr; Chia quy, thang, tuan, ngay &rarr; So sanh Plan vs Actual
+                        AI lập kế hoạch 12 tháng &rarr; Chia quý, tháng, tuần, ngày &rarr; So sánh Plan vs Actual
                     </p>
                 </div>
                 <button
                     onClick={() => setShowCreate(true)}
                     className="flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition"
                 >
-                    <Plus className="w-4 h-4" /> Tao ke hoach moi
+                    <Plus className="w-4 h-4" /> Tạo kế hoạch mới
                 </button>
             </div>
 
             {/* Plan switcher */}
             {plans.length > 0 && (
                 <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs font-semibold text-slate-500">Ke hoach:</span>
+                    <span className="text-xs font-semibold text-slate-500">Kế hoạch:</span>
                     {plans.map(p => {
                         const sc = STATUS_CONFIG[p.status];
                         const isActive = p.id === activePlan?.id;
@@ -239,21 +239,21 @@ export default function AIPlannerPage() {
                 <div className="bg-white rounded-2xl border border-purple-200 shadow-lg p-6 space-y-5">
                     <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <BrainCircuit className="w-5 h-5 text-purple-600" />
-                        Tao ke hoach tai chinh voi AI
+                        Tạo kế hoạch tài chính với AI
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Ten ke hoach</label>
+                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Tên kế hoạch</label>
                             <input
                                 value={form.name}
                                 onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                                placeholder="VD: Ke hoach 2026"
+                                placeholder="VD: Kế hoạch 2026"
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Nam</label>
+                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Năm</label>
                             <input
                                 type="number"
                                 value={form.year}
@@ -262,50 +262,50 @@ export default function AIPlannerPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Doanh thu muc tieu ca nam (VND)</label>
+                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Doanh thu mục tiêu cả năm (VND)</label>
                             <input
                                 type="number"
                                 value={form.annualRevenue || ""}
                                 onChange={e => setForm(p => ({ ...p, annualRevenue: Number(e.target.value) }))}
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                                placeholder="VD: 5000000000 (5 ty)"
+                                placeholder="VD: 5000000000 (5 tỷ)"
                             />
                             {form.annualRevenue > 0 && (
                                 <div className="text-xs text-purple-600 mt-1">
-                                    = {formatVND(form.annualRevenue)} / nam = {formatVND(Math.round(form.annualRevenue / 12))} / thang
+                                    = {formatVND(form.annualRevenue)} / năm = {formatVND(Math.round(form.annualRevenue / 12))} / tháng
                                 </div>
                             )}
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Nganh nghe</label>
+                            <label className="text-xs font-semibold text-slate-500 mb-1 block">Ngành nghề</label>
                             <select
                                 value={form.industry}
                                 onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none"
                             >
-                                <option value="">Chon nganh...</option>
-                                <option value="F&B">F&B (Nha hang / Cafe)</option>
-                                <option value="Retail">Ban le</option>
-                                <option value="E-commerce">Thuong mai dien tu</option>
-                                <option value="SaaS">Phan mem / SaaS</option>
-                                <option value="Education">Giao duc</option>
-                                <option value="Healthcare">Y te</option>
-                                <option value="Manufacturing">San xuat</option>
-                                <option value="Services">Dich vu</option>
-                                <option value="Logistics">Van tai / Logistics</option>
-                                <option value="Real Estate">Bat dong san</option>
+                                <option value="">Chọn ngành...</option>
+                                <option value="F&B">F&B (Nhà hàng / Cafe)</option>
+                                <option value="Retail">Bán lẻ</option>
+                                <option value="E-commerce">Thương mại điện tử</option>
+                                <option value="SaaS">Phần mềm / SaaS</option>
+                                <option value="Education">Giáo dục</option>
+                                <option value="Healthcare">Y tế</option>
+                                <option value="Manufacturing">Sản xuất</option>
+                                <option value="Services">Dịch vụ</option>
+                                <option value="Logistics">Vận tải / Logistics</option>
+                                <option value="Real Estate">Bất động sản</option>
                             </select>
                         </div>
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-slate-500 mb-1 block">Boi canh doanh nghiep (tuy chon)</label>
+                        <label className="text-xs font-semibold text-slate-500 mb-1 block">Bối cảnh doanh nghiệp (tùy chọn)</label>
                         <textarea
                             value={form.businessContext}
                             onChange={e => setForm(p => ({ ...p, businessContext: e.target.value }))}
                             className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none"
                             rows={3}
-                            placeholder="VD: Cong ty F&B co 3 chi nhanh tai HCM, dang mo rong ra Ha Noi. Team 25 nguoi. Doanh thu nam truoc 3 ty..."
+                            placeholder="VD: Công ty F&B có 3 chi nhánh tại HCM, đang mở rộng ra Hà Nội. Team 25 người. Doanh thu năm trước 3 tỷ..."
                         />
                     </div>
 
@@ -316,16 +316,16 @@ export default function AIPlannerPage() {
                             className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition disabled:opacity-50"
                         >
                             {generating ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> AI dang lap ke hoach...</>
+                                <><Loader2 className="w-4 h-4 animate-spin" /> AI đang lập kế hoạch...</>
                             ) : (
-                                <><BrainCircuit className="w-4 h-4" /> AI Generate ke hoach</>
+                                <><BrainCircuit className="w-4 h-4" /> AI Generate kế hoạch</>
                             )}
                         </button>
                         <button
                             onClick={() => { setShowCreate(false); setAiResult(null); }}
                             className="px-4 py-2.5 bg-slate-100 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-200"
                         >
-                            Huy
+                            Hủy
                         </button>
                     </div>
 
@@ -353,7 +353,7 @@ export default function AIPlannerPage() {
                                 <table className="w-full text-xs">
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500 uppercase tracking-wider">
-                                            <th className="text-left px-3 py-2">Thang</th>
+                                            <th className="text-left px-3 py-2">Tháng</th>
                                             <th className="text-right px-3 py-2">Doanh thu</th>
                                             <th className="text-right px-3 py-2">COGS</th>
                                             <th className="text-right px-3 py-2">MKT</th>
@@ -386,10 +386,10 @@ export default function AIPlannerPage() {
                                 className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition disabled:opacity-50"
                             >
                                 {creating ? (
-                                    <><Loader2 className="w-4 h-4 animate-spin" /> Dang luu...</>
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Đang lưu...</>
                                 ) : (
-                                    <><CheckCircle className="w-4 h-4" /> Luu ke hoach nay</>
-                                )}
+                                <><CheckCircle className="w-4 h-4" /> Lưu kế hoạch này</>
+                            )}
                             </button>
                         </div>
                     )}
@@ -423,7 +423,7 @@ export default function AIPlannerPage() {
                                 })}
                                 <button
                                     onClick={() => {
-                                        if (confirm("Xoa ke hoach nay?")) fos.removePlan(activePlan.id);
+                                        if (confirm("Xóa kế hoạch này?")) fos.removePlan(activePlan.id);
                                     }}
                                     className="p-2 text-slate-300 hover:text-red-500 transition"
                                 >
@@ -440,15 +440,15 @@ export default function AIPlannerPage() {
                                     <div className="text-lg font-bold text-blue-700 tabular-nums">{formatVND(planTotals.revenue)}</div>
                                 </div>
                                 <div className="bg-emerald-50 rounded-xl p-3">
-                                    <div className="text-[10px] text-emerald-500 font-semibold uppercase">KH Loi nhuan</div>
+                                    <div className="text-[10px] text-emerald-500 font-semibold uppercase">KH Lợi nhuận</div>
                                     <div className="text-lg font-bold text-emerald-700 tabular-nums">{formatVND(planTotals.profit)}</div>
                                 </div>
                                 <div className="bg-purple-50 rounded-xl p-3">
-                                    <div className="text-[10px] text-purple-500 font-semibold uppercase">Thuc te DT</div>
+                                    <div className="text-[10px] text-purple-500 font-semibold uppercase">Thực tế DT</div>
                                     <div className="text-lg font-bold text-purple-700 tabular-nums">{formatVND(planTotals.actualRevenue)}</div>
                                 </div>
                                 <div className={`rounded-xl p-3 ${planTotals.actualRevenue - planTotals.revenue >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-                                    <div className="text-[10px] font-semibold uppercase text-slate-500">Chenh lech</div>
+                                    <div className="text-[10px] font-semibold uppercase text-slate-500">Chênh lệch</div>
                                     <div className={`text-lg font-bold tabular-nums ${planTotals.actualRevenue - planTotals.revenue >= 0 ? "text-emerald-700" : "text-red-700"}`}>
                                         {planTotals.actualRevenue - planTotals.revenue >= 0 ? "+" : ""}{formatVND(planTotals.actualRevenue - planTotals.revenue)}
                                     </div>
@@ -460,9 +460,9 @@ export default function AIPlannerPage() {
                     {/* View mode tabs */}
                     <div className="flex items-center gap-2">
                         {([
-                            { key: "month" as const, label: "Thang", icon: Calendar },
-                            { key: "quarter" as const, label: "Quy", icon: Target },
-                            { key: "week" as const, label: "Tuan", icon: Clock },
+                            { key: "month" as const, label: "Tháng", icon: Calendar },
+                            { key: "quarter" as const, label: "Quý", icon: Target },
+                            { key: "week" as const, label: "Tuần", icon: Clock },
                         ]).map(tab => (
                             <button
                                 key={tab.key}
@@ -480,7 +480,7 @@ export default function AIPlannerPage() {
                     {/* Plan vs Actual Chart */}
                     {viewMode === "month" && chartData.length > 0 && (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                            <h3 className="text-sm font-bold text-slate-700 mb-4">Plan vs Actual - Theo thang</h3>
+                            <h3 className="text-sm font-bold text-slate-700 mb-4">Plan vs Actual - Theo tháng</h3>
                             <ResponsiveContainer width="100%" height={300}>
                                 <ComposedChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -496,12 +496,12 @@ export default function AIPlannerPage() {
                                     />
                                     <Legend />
                                     <Bar dataKey="KH Doanh thu" fill="#93c5fd" opacity={0.7} />
-                                    <Bar dataKey="Thuc te" fill="#3b82f6">
+                                    <Bar dataKey="Thực tế" fill="#3b82f6">
                                         {chartData.map((entry, i) => (
-                                            <Cell key={i} fill={entry["Thuc te"] >= entry["KH Doanh thu"] ? "#10b981" : "#ef4444"} />
+                                            <Cell key={i} fill={entry["Thực tế"] >= entry["KH Doanh thu"] ? "#10b981" : "#ef4444"} />
                                         ))}
                                     </Bar>
-                                    <Line type="monotone" dataKey="KH Loi nhuan" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                                    <Line type="monotone" dataKey="KH Lợi nhuận" stroke="#8b5cf6" strokeWidth={2} dot={false} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>
@@ -513,10 +513,10 @@ export default function AIPlannerPage() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                        <th className="text-left px-4 py-3 font-semibold">Thang</th>
+                                        <th className="text-left px-4 py-3 font-semibold">Tháng</th>
                                         <th className="text-right px-4 py-3 font-semibold">KH Doanh thu</th>
-                                        <th className="text-right px-4 py-3 font-semibold">Thuc te</th>
-                                        <th className="text-right px-4 py-3 font-semibold">Chenh lech</th>
+                                        <th className="text-right px-4 py-3 font-semibold">Thực tế</th>
+                                        <th className="text-right px-4 py-3 font-semibold">Chênh lệch</th>
                                         <th className="text-right px-4 py-3 font-semibold">%</th>
                                         <th className="text-right px-4 py-3 font-semibold">KH Profit</th>
                                         <th className="w-8"></th>
@@ -560,8 +560,8 @@ export default function AIPlannerPage() {
                                                             )}
                                                             {/* Daily breakdown */}
                                                             <div className="mt-2 text-[10px] text-slate-400">
-                                                                Muc tieu ngay: {formatVND(Math.round(target.revenue / 30))} DT / {formatVND(Math.round((target.cogs + target.marketing + target.operations + target.payroll) / 30))} CP
-                                                                &nbsp;|&nbsp; Muc tieu tuan: {formatVND(Math.round(target.revenue / 4))} DT
+                                                                Mục tiêu ngày: {formatVND(Math.round(target.revenue / 30))} DT / {formatVND(Math.round((target.cogs + target.marketing + target.operations + target.payroll) / 30))} CP
+                                                                &nbsp;|&nbsp; Mục tiêu tuần: {formatVND(Math.round(target.revenue / 4))} DT
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -598,7 +598,7 @@ export default function AIPlannerPage() {
                                                     <span className="font-semibold tabular-nums">{formatVND(q.planned.revenue)}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Thuc te</span>
+                                                    <span className="text-slate-500">Thực tế</span>
                                                     <span className="font-semibold tabular-nums">{formatVND(q.actual.revenue)}</span>
                                                 </div>
                                                 <div className="flex justify-between">
@@ -607,7 +607,7 @@ export default function AIPlannerPage() {
                                                 </div>
                                                 <div className="h-px bg-slate-100 my-1" />
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">Chenh lech</span>
+                                                    <span className="text-slate-500">Chênh lệch</span>
                                                     <span className={`font-bold tabular-nums ${isAhead ? "text-emerald-600" : "text-red-600"}`}>
                                                         {isAhead ? "+" : ""}{formatVND(q.variance)}
                                                     </span>
@@ -624,18 +624,18 @@ export default function AIPlannerPage() {
                     {viewMode === "week" && weekData.length > 0 && (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="p-4 border-b border-slate-200">
-                                <h3 className="text-sm font-bold text-slate-700">Muc tieu theo tuan (48 tuan)</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">Chia deu tu ke hoach thang (4 tuan / thang)</p>
+                                <h3 className="text-sm font-bold text-slate-700">Mục tiêu theo tuần (48 tuần)</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Chia đều từ kế hoạch tháng (4 tuần / tháng)</p>
                             </div>
                             <div className="max-h-[500px] overflow-y-auto">
                                 <table className="w-full text-xs">
                                     <thead className="sticky top-0 bg-slate-50">
                                         <tr className="text-slate-500 uppercase tracking-wider">
-                                            <th className="text-left px-4 py-2 font-semibold">Tuan</th>
-                                            <th className="text-left px-4 py-2 font-semibold">Thang</th>
-                                            <th className="text-right px-4 py-2 font-semibold">DT Muc tieu</th>
-                                            <th className="text-right px-4 py-2 font-semibold">CP Muc tieu</th>
-                                            <th className="text-right px-4 py-2 font-semibold">LN Muc tieu</th>
+                                             <th className="text-left px-4 py-2 font-semibold">Tuần</th>
+                                            <th className="text-left px-4 py-2 font-semibold">Tháng</th>
+                                            <th className="text-right px-4 py-2 font-semibold">DT Mục tiêu</th>
+                                            <th className="text-right px-4 py-2 font-semibold">CP Mục tiêu</th>
+                                            <th className="text-right px-4 py-2 font-semibold">LN Mục tiêu</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -643,7 +643,7 @@ export default function AIPlannerPage() {
                                             const monthIdx = Math.floor((w.weekNumber - 1) / 4);
                                             return (
                                                 <tr key={w.weekNumber} className="hover:bg-slate-50/50">
-                                                    <td className="px-4 py-2 font-semibold text-slate-700">Tuan {w.weekNumber}</td>
+                                                    <td className="px-4 py-2 font-semibold text-slate-700">Tuần {w.weekNumber}</td>
                                                     <td className="px-4 py-2 text-slate-500">{MONTH_LABELS[monthIdx]}</td>
                                                     <td className="px-4 py-2 text-right tabular-nums text-blue-600">{formatVND(w.revenue)}</td>
                                                     <td className="px-4 py-2 text-right tabular-nums text-red-600">{formatVND(w.expense)}</td>
@@ -665,16 +665,16 @@ export default function AIPlannerPage() {
             {plans.length === 0 && !showCreate && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                     <BrainCircuit className="w-12 h-12 text-purple-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-700 mb-2">Chua co ke hoach nao</h3>
+                    <h3 className="text-lg font-bold text-slate-700 mb-2">Chưa có kế hoạch nào</h3>
                     <p className="text-sm text-slate-500 max-w-md mx-auto mb-4">
-                        Nhap doanh thu muc tieu, AI se lap ke hoach 12 thang chi tiet voi seasonality phu hop nganh nghe cua ban.
-                        Sau do so sanh Plan vs Actual theo thang/quy/tuan.
+                        Nhập doanh thu mục tiêu, AI sẽ lập kế hoạch 12 tháng chi tiết với seasonality phù hợp ngành nghề của bạn.
+                        Sau đó so sánh Plan vs Actual theo tháng/quý/tuần.
                     </p>
                     <button
                         onClick={() => setShowCreate(true)}
                         className="inline-flex items-center gap-2 px-5 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition"
                     >
-                        <BrainCircuit className="w-5 h-5" /> Tao ke hoach dau tien
+                        <BrainCircuit className="w-5 h-5" /> Tạo kế hoạch đầu tiên
                     </button>
                 </div>
             )}
