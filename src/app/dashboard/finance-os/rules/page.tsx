@@ -15,9 +15,13 @@ export default function AllocationRulesPage() {
     const [saved, setSaved] = useState(false);
 
     const handleSave = async () => {
-        await fos.saveAllocationRules();
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        try {
+            await fos.saveAllocationRules();
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch (err) {
+            console.error("Failed to save allocation rules:", err);
+        }
     };
 
     if (!isLoaded) return null;

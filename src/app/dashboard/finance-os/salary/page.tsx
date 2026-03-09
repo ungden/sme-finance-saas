@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, AlertTriangle, CheckCircle, Users, Calculator } from "lucide-react";
 import { useFinanceOS } from "@/context/FinanceOSContext";
-import { ALLOCATION_CATEGORY_LABELS } from "@/lib/types";
+
 
 export default function SalaryPage() {
     const fos = useFinanceOS();
@@ -21,9 +21,13 @@ export default function SalaryPage() {
 
     const handleAdd = async () => {
         if (!empForm.name.trim() || !selectedDeptId) return;
-        await fos.addEmployeeAssignment(selectedDeptId, empForm.name.trim(), empForm.role, empForm.baseSalary, empForm.bonus);
-        setEmpForm({ name: "", role: "", baseSalary: 0, bonus: 0 });
-        setShowForm(false);
+        try {
+            await fos.addEmployeeAssignment(selectedDeptId, empForm.name.trim(), empForm.role, empForm.baseSalary, empForm.bonus);
+            setEmpForm({ name: "", role: "", baseSalary: 0, bonus: 0 });
+            setShowForm(false);
+        } catch (err) {
+            console.error("Failed to add employee:", err);
+        }
     };
 
     if (!isLoaded) return null;

@@ -18,6 +18,12 @@ import type {
     MonthlyTarget,
     PlanStatus,
     PlanVsActual,
+    MarketingSpend,
+    ChannelROI,
+    CashflowForecast,
+    ForecastScenario,
+    ForecastMonth,
+    ForecastAssumptions,
 } from "@/lib/types";
 
 // ── Context Type ──
@@ -105,6 +111,26 @@ interface FinanceOSContextType {
     updatePlanStatus: (id: string, status: PlanStatus) => Promise<void>;
     removePlan: (id: string) => Promise<void>;
 
+    // ── Marketing Spend (ROI) ──
+    marketingSpend: MarketingSpend[];
+    channelROIs: ChannelROI[];
+    addMarketingSpend: (entry: {
+        channel_id: string; month: string; spend: number;
+        leads: number; customers: number; revenue_attributed: number; notes: string;
+    }) => Promise<void>;
+    updateMarketingSpendEntry: (id: string, updates: Partial<Pick<MarketingSpend, "spend" | "leads" | "customers" | "revenue_attributed" | "notes">>) => Promise<void>;
+    removeMarketingSpend: (id: string) => Promise<void>;
+
+    // ── Cashflow Forecasts ──
+    forecasts: CashflowForecast[];
+    activeForecast: CashflowForecast | null;
+    setActiveForecastId: (id: string | null) => void;
+    createForecast: (forecast: {
+        name: string; scenario: ForecastScenario; forecast_months: number;
+        monthly_data: ForecastMonth[]; assumptions: ForecastAssumptions; ai_summary: string;
+    }) => Promise<CashflowForecast>;
+    removeForecast: (id: string) => Promise<void>;
+
     // Refresh
     refresh: () => Promise<void>;
 
@@ -141,6 +167,13 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
     const [activePlanId, setActivePlanIdState] = useState<string | null>(null);
     const [activePlanTargets, setActivePlanTargets] = useState<MonthlyTarget[]>([]);
 
+    // Marketing spend state
+    const [marketingSpend, setMarketingSpend] = useState<MarketingSpend[]>([]);
+
+    // Cashflow forecast state
+    const [forecasts, setForecasts] = useState<CashflowForecast[]>([]);
+    const [activeForecastId, setActiveForecastIdState] = useState<string | null>(null);
+
     // ── Load data when workspace changes ──
     const loadData = useCallback(async () => {
         if (!workspaceId) {
@@ -151,18 +184,22 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
             setDailyCashflow([]);
             setPlans([]);
             setActivePlanTargets([]);
+            setMarketingSpend([]);
+            setForecasts([]);
             setIsLoaded(true);
             return;
         }
 
         try {
-            const [rules, depts, emps, channels, cashflow, plansData] = await Promise.all([
+            const [rules, depts, emps, channels, cashflow, plansData, spendData, forecastsData] = await Promise.all([
                 api.getAllocationRules(workspaceId),
                 api.getDepartments(workspaceId),
                 api.getEmployeeAssignments(workspaceId),
                 api.getMarketingChannels(workspaceId),
                 api.getDailyCashflow(workspaceId),
                 api.getFinancialPlans(workspaceId),
+                api.getMarketingSpend(workspaceId),
+                api.getCashflowForecasts(workspaceId),
             ]);
             setAllocationRules(rules);
             setDepartments(depts);
@@ -170,6 +207,8 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
             setMarketingChannels(channels);
             setDailyCashflow(cashflow);
             setPlans(plansData);
+            setMarketingSpend(spendData);
+            setForecasts(forecastsData);
             // Auto-select active plan
             const active = plansData.find(p => p.status === "active") || plansData[0] || null;
             if (active) {
@@ -327,6 +366,27 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
             };
         });
     }, [activePlan, activePlanTargets, dailyCashflow]);
+
+    // ── Computed: Channel ROIs ──
+    const channelROIs = useMemo<ChannelROI[]>(() => {
+        return marketingChannels.map(ch => {
+            const budget = marketingPool * (ch.percent / 100);
+            const spends = marketingSpend.filter(s => s.channel_id === ch.id);
+            const totalSpend = spends.reduce((s, e) => s + e.spend, 0);
+            const totalLeads = spends.reduce((s, e) => s + e.leads, 0);
+            const totalCustomers = spends.reduce((s, e) => s + e.customers, 0);
+            const totalRevenue = spends.reduce((s, e) => s + e.revenue_attributed, 0);
+            const roi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
+            const cac = totalCustomers > 0 ? totalSpend / totalCustomers : 0;
+            const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+            const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+            return { channel: ch, budget, totalSpend, totalLeads, totalCustomers, totalRevenue, roi, cac, cpl, roas, spendByMonth: spends };
+        });
+    }, [marketingChannels, marketingPool, marketingSpend]);
+
+    // ── Active Forecast ──
+    const activeForecast = useMemo(() => forecasts.find(f => f.id === activeForecastId) || null, [forecasts, activeForecastId]);
+    const setActiveForecastId = useCallback((id: string | null) => { setActiveForecastIdState(id); }, []);
 
     // ── Format VND ──
     const formatVND = useCallback((val: number) => {
@@ -556,6 +616,83 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
         }
     }, [activePlanId]);
 
+    // ── Marketing Spend ──
+    const addMarketingSpend = useCallback(async (entry: {
+        channel_id: string; month: string; spend: number;
+        leads: number; customers: number; revenue_attributed: number; notes: string;
+    }) => {
+        if (!workspaceId) return;
+        setIsSaving(true);
+        try {
+            const created = await api.createMarketingSpend(workspaceId, entry);
+            setMarketingSpend(prev => {
+                // Replace if same channel+month (upsert)
+                const existing = prev.findIndex(s => s.channel_id === entry.channel_id && s.month === entry.month);
+                if (existing >= 0) {
+                    const updated = [...prev];
+                    updated[existing] = created;
+                    return updated;
+                }
+                return [created, ...prev];
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    }, [workspaceId]);
+
+    const updateMarketingSpendEntry = useCallback(async (
+        id: string,
+        updates: Partial<Pick<MarketingSpend, "spend" | "leads" | "customers" | "revenue_attributed" | "notes">>
+    ) => {
+        setMarketingSpend(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
+        setIsSaving(true);
+        try {
+            await api.updateMarketingSpend(id, updates);
+        } finally {
+            setIsSaving(false);
+        }
+    }, []);
+
+    const removeMarketingSpend = useCallback(async (id: string) => {
+        setMarketingSpend(prev => prev.filter(s => s.id !== id));
+        setIsSaving(true);
+        try {
+            await api.deleteMarketingSpend(id);
+        } finally {
+            setIsSaving(false);
+        }
+    }, []);
+
+    // ── Cashflow Forecasts ──
+    const createForecast = useCallback(async (forecast: {
+        name: string; scenario: ForecastScenario; forecast_months: number;
+        monthly_data: ForecastMonth[]; assumptions: ForecastAssumptions; ai_summary: string;
+    }): Promise<CashflowForecast> => {
+        if (!workspaceId) throw new Error("No workspace");
+        setIsSaving(true);
+        try {
+            const created = await api.createCashflowForecast(workspaceId, forecast);
+            setForecasts(prev => [created, ...prev]);
+            setActiveForecastIdState(created.id);
+            return created;
+        } finally {
+            setIsSaving(false);
+        }
+    }, [workspaceId]);
+
+    const removeForecast = useCallback(async (id: string) => {
+        setForecasts(prev => prev.filter(f => f.id !== id));
+        if (activeForecastId === id) {
+            setActiveForecastIdState(null);
+        }
+        setIsSaving(true);
+        try {
+            await api.deleteCashflowForecast(id);
+        } finally {
+            setIsSaving(false);
+        }
+    }, [activeForecastId]);
+
     const refresh = useCallback(async () => {
         await loadData();
     }, [loadData]);
@@ -604,6 +741,16 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
         addCashflowEntry,
         updateCashflowEntry,
         removeCashflowEntry,
+        marketingSpend,
+        channelROIs,
+        addMarketingSpend,
+        updateMarketingSpendEntry,
+        removeMarketingSpend,
+        forecasts,
+        activeForecast,
+        setActiveForecastId,
+        createForecast,
+        removeForecast,
         refresh,
         formatVND,
     }), [
@@ -618,6 +765,10 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
         addEmployeeAssignment, updateEmployeeAssign, removeEmployeeAssignment,
         addMarketingChannel, updateChannel, removeMarketingChannel,
         addCashflowEntry, updateCashflowEntry, removeCashflowEntry,
+        marketingSpend, channelROIs,
+        addMarketingSpend, updateMarketingSpendEntry, removeMarketingSpend,
+        forecasts, activeForecast, activeForecastId,
+        setActiveForecastId, createForecast, removeForecast,
         refresh, formatVND,
     ]);
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, TrendingUp, TrendingDown, Activity, Calendar } from "lucide-react";
 import { useFinanceOS } from "@/context/FinanceOSContext";
 import type { CashflowSource } from "@/lib/types";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ComposedChart, Bar } from "recharts";
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Bar } from "recharts";
 
 export default function CashflowPage() {
     const fos = useFinanceOS();
@@ -28,9 +28,13 @@ export default function CashflowPage() {
     });
 
     const handleAdd = async () => {
-        await fos.addCashflowEntry(form);
-        setForm({ date: new Date().toISOString().slice(0, 10), revenue: 0, expense: 0, source: "manual", notes: "" });
-        setShowForm(false);
+        try {
+            await fos.addCashflowEntry(form);
+            setForm({ date: new Date().toISOString().slice(0, 10), revenue: 0, expense: 0, source: "manual", notes: "" });
+            setShowForm(false);
+        } catch (err) {
+            console.error("Failed to add cashflow entry:", err);
+        }
     };
 
     // Filtered entries

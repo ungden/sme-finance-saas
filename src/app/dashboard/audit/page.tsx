@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Clock, User, Plus, Trash2, Edit3, FileText, Users, Building, DollarSign } from "lucide-react";
+import { useERP } from "@/context/ERPContext";
 import type { AuditLog } from "@/lib/types";
 
 const ENTITY_ICONS: Record<string, React.ReactNode> = {
@@ -10,46 +11,47 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
     facility: <Building className="w-4 h-4 text-amber-500" />,
     yearData: <DollarSign className="w-4 h-4 text-emerald-500" />,
     contact: <User className="w-4 h-4 text-purple-500" />,
+    product: <FileText className="w-4 h-4 text-orange-500" />,
+    budget: <DollarSign className="w-4 h-4 text-violet-500" />,
 };
 
-const ACTION_COLORS = {
+const ACTION_COLORS: Record<string, string> = {
     create: 'bg-emerald-100 text-emerald-700',
     update: 'bg-blue-100 text-blue-700',
     delete: 'bg-red-100 text-red-700',
 };
 
-const ACTION_ICONS = {
+const ACTION_ICONS: Record<string, React.ReactNode> = {
     create: <Plus className="w-3 h-3" />,
     update: <Edit3 className="w-3 h-3" />,
     delete: <Trash2 className="w-3 h-3" />,
 };
 
 export default function AuditPage() {
-    const [logs] = useState<AuditLog[]>(() => {
-        if (typeof window === 'undefined') return [];
-        const saved = localStorage.getItem('rp_audit_log');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const erp = useERP();
+    const { auditLogs, isLoaded } = erp;
 
     const [filter, setFilter] = useState('all');
 
-    const filtered = filter === 'all' ? logs : logs.filter(l => l.entity === filter);
+    if (!isLoaded) return null;
+
+    const filtered = filter === 'all' ? auditLogs : auditLogs.filter(l => l.entity === filter);
 
     return (
         <div className="space-y-6 max-w-[1000px] mx-auto pb-20">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <Clock className="w-6 h-6 text-purple-600" /> Nhật ký Hoạt động
+                    <Clock className="w-6 h-6 text-purple-600" /> Nhat ky Hoat dong
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">Lịch sử thay đổi dữ liệu bởi tất cả thành viên.</p>
+                <p className="text-sm text-slate-500 mt-1">Lich su thay doi du lieu boi tat ca thanh vien.</p>
             </div>
 
             {/* Filter */}
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit flex-wrap">
-                {['all', 'invoice', 'employee', 'facility', 'yearData', 'contact'].map(key => (
+                {['all', 'invoice', 'employee', 'facility', 'yearData', 'contact', 'product', 'budget'].map(key => (
                     <button key={key} onClick={() => setFilter(key)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${filter === key ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                    >{key === 'all' ? 'Tất cả' : key === 'invoice' ? 'Hóa đơn' : key === 'employee' ? 'Nhân sự' : key === 'facility' ? 'Mặt bằng' : key === 'yearData' ? 'Tài chính' : 'Liên hệ'}</button>
+                    >{key === 'all' ? 'Tat ca' : key === 'invoice' ? 'Hoa don' : key === 'employee' ? 'Nhan su' : key === 'facility' ? 'Mat bang' : key === 'yearData' ? 'Tai chinh' : key === 'contact' ? 'Lien he' : key === 'product' ? 'San pham' : 'Ngan sach'}</button>
                 ))}
             </div>
 
@@ -57,8 +59,8 @@ export default function AuditPage() {
             {filtered.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
                     <Clock className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-slate-600 mb-2">Chưa có hoạt động nào</h3>
-                    <p className="text-sm text-slate-400">Nhật ký sẽ tự động ghi nhận khi có thay đổi dữ liệu.</p>
+                    <h3 className="text-lg font-bold text-slate-600 mb-2">Chua co hoat dong nao</h3>
+                    <p className="text-sm text-slate-400">Nhat ky se tu dong ghi nhan khi co thay doi du lieu.</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -69,8 +71,8 @@ export default function AuditPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${ACTION_COLORS[log.action]}`}>
-                                        {ACTION_ICONS[log.action]} {log.action === 'create' ? 'Tạo' : log.action === 'update' ? 'Sửa' : 'Xóa'}
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}>
+                                        {ACTION_ICONS[log.action]} {log.action === 'create' ? 'Tao' : log.action === 'update' ? 'Sua' : 'Xoa'}
                                     </span>
                                     <span className="text-sm text-slate-900 font-medium">{log.description}</span>
                                 </div>

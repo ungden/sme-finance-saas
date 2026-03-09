@@ -10,6 +10,11 @@ import type {
     FinancialPlan,
     MonthlyTarget,
     PlanStatus,
+    MarketingSpend,
+    CashflowForecast,
+    ForecastScenario,
+    ForecastMonth,
+    ForecastAssumptions,
 } from "./types";
 
 function getSupabase() {
@@ -412,6 +417,136 @@ export async function updateMonthlyTarget(
     const { error } = await getSupabase()
         .from("monthly_targets")
         .update(updates)
+        .eq("id", id);
+    if (error) throw error;
+}
+
+// ══════════════════════════════════════════════════
+// MARKETING SPEND (ROI TRACKING)
+// ══════════════════════════════════════════════════
+
+export async function getMarketingSpend(workspaceId: string): Promise<MarketingSpend[]> {
+    const { data, error } = await getSupabase()
+        .from("marketing_spend")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .order("month", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(s => ({
+        ...s,
+        spend: Number(s.spend),
+        revenue_attributed: Number(s.revenue_attributed),
+    }));
+}
+
+export async function createMarketingSpend(
+    workspaceId: string,
+    entry: {
+        channel_id: string;
+        month: string;
+        spend: number;
+        leads: number;
+        customers: number;
+        revenue_attributed: number;
+        notes: string;
+    }
+): Promise<MarketingSpend> {
+    const { data, error } = await getSupabase()
+        .from("marketing_spend")
+        .upsert(
+            { workspace_id: workspaceId, ...entry },
+            { onConflict: "channel_id,month" }
+        )
+        .select()
+        .single();
+    if (error) throw error;
+    return { ...data, spend: Number(data.spend), revenue_attributed: Number(data.revenue_attributed) };
+}
+
+export async function updateMarketingSpend(
+    id: string,
+    updates: Partial<Pick<MarketingSpend, "spend" | "leads" | "customers" | "revenue_attributed" | "notes">>
+): Promise<void> {
+    const { error } = await getSupabase()
+        .from("marketing_spend")
+        .update(updates)
+        .eq("id", id);
+    if (error) throw error;
+}
+
+export async function deleteMarketingSpend(id: string): Promise<void> {
+    const { error } = await getSupabase()
+        .from("marketing_spend")
+        .delete()
+        .eq("id", id);
+    if (error) throw error;
+}
+
+// ══════════════════════════════════════════════════
+// CASHFLOW FORECASTS
+// ══════════════════════════════════════════════════
+
+export async function getCashflowForecasts(workspaceId: string): Promise<CashflowForecast[]> {
+    const { data, error } = await getSupabase()
+        .from("cashflow_forecasts")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(f => ({
+        ...f,
+        monthly_data: (f.monthly_data || []) as ForecastMonth[],
+        assumptions: (f.assumptions || { growth_rate: 0, seasonal_factors: [], notes: "" }) as ForecastAssumptions,
+    }));
+}
+
+export async function createCashflowForecast(
+    workspaceId: string,
+    forecast: {
+        name: string;
+        scenario: ForecastScenario;
+        forecast_months: number;
+        monthly_data: ForecastMonth[];
+        assumptions: ForecastAssumptions;
+        ai_summary: string;
+    }
+): Promise<CashflowForecast> {
+    const { data, error } = await getSupabase()
+        .from("cashflow_forecasts")
+        .insert({
+            workspace_id: workspaceId,
+            name: forecast.name,
+            scenario: forecast.scenario,
+            forecast_months: forecast.forecast_months,
+            monthly_data: forecast.monthly_data,
+            assumptions: forecast.assumptions,
+            ai_summary: forecast.ai_summary,
+        })
+        .select()
+        .single();
+    if (error) throw error;
+    return {
+        ...data,
+        monthly_data: (data.monthly_data || []) as ForecastMonth[],
+        assumptions: (data.assumptions || { growth_rate: 0, seasonal_factors: [], notes: "" }) as ForecastAssumptions,
+    };
+}
+
+export async function updateCashflowForecast(
+    id: string,
+    updates: Partial<Pick<CashflowForecast, "name" | "scenario" | "monthly_data" | "assumptions" | "ai_summary">>
+): Promise<void> {
+    const { error } = await getSupabase()
+        .from("cashflow_forecasts")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id);
+    if (error) throw error;
+}
+
+export async function deleteCashflowForecast(id: string): Promise<void> {
+    const { error } = await getSupabase()
+        .from("cashflow_forecasts")
+        .delete()
         .eq("id", id);
     if (error) throw error;
 }

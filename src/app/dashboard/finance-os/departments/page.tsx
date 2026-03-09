@@ -26,18 +26,26 @@ export default function DepartmentsPage() {
 
     const handleAddDept = async () => {
         if (!deptName.trim()) return;
-        await fos.addDepartment(deptName.trim(), deptPercent);
-        setDeptName("");
-        setDeptPercent(0);
-        setShowDeptForm(false);
+        try {
+            await fos.addDepartment(deptName.trim(), deptPercent);
+            setDeptName("");
+            setDeptPercent(0);
+            setShowDeptForm(false);
+        } catch (err) {
+            console.error("Failed to add department:", err);
+        }
     };
 
     const handleAddChannel = async () => {
         if (!chName.trim()) return;
-        await fos.addMarketingChannel(chName.trim(), chPercent);
-        setChName("");
-        setChPercent(0);
-        setShowChForm(false);
+        try {
+            await fos.addMarketingChannel(chName.trim(), chPercent);
+            setChName("");
+            setChPercent(0);
+            setShowChForm(false);
+        } catch (err) {
+            console.error("Failed to add marketing channel:", err);
+        }
     };
 
     if (!isLoaded) return null;

@@ -222,6 +222,66 @@ export interface DailyCashflow {
     created_at: string;
 }
 
+// ── Finance OS: Marketing Spend (ROI Tracking) ──
+
+export interface MarketingSpend {
+    id: string;
+    workspace_id: string;
+    channel_id: string;
+    month: string; // 'YYYY-MM'
+    spend: number;
+    leads: number;
+    customers: number;
+    revenue_attributed: number;
+    notes: string;
+    created_at: string;
+}
+
+export interface ChannelROI {
+    channel: MarketingChannel;
+    budget: number;
+    totalSpend: number;
+    totalLeads: number;
+    totalCustomers: number;
+    totalRevenue: number;
+    roi: number; // (revenue - spend) / spend * 100
+    cac: number; // spend / customers
+    cpl: number; // spend / leads
+    roas: number; // revenue / spend
+    spendByMonth: MarketingSpend[];
+}
+
+// ── Finance OS: Cashflow Forecast ──
+
+export interface ForecastMonth {
+    month: string; // 'YYYY-MM'
+    revenue: number;
+    expense: number;
+    net: number;
+    confidence: number; // 0-1
+}
+
+export interface ForecastAssumptions {
+    growth_rate: number;
+    seasonal_factors: number[];
+    notes: string;
+}
+
+export type ForecastScenario = 'base' | 'optimistic' | 'pessimistic' | 'custom';
+
+export interface CashflowForecast {
+    id: string;
+    workspace_id: string;
+    name: string;
+    scenario: ForecastScenario;
+    forecast_months: number;
+    monthly_data: ForecastMonth[];
+    assumptions: ForecastAssumptions;
+    ai_summary: string;
+    created_at: string;
+    updated_at: string;
+}
+
 // Computed types for Finance OS dashboard
 export interface AllocationAmount {
     category: AllocationCategory;

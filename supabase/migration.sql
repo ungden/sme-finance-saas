@@ -398,3 +398,202 @@ CREATE POLICY "Owner/Editor can manage monthly_targets" ON monthly_targets
             WHERE wm.user_id = auth.uid() AND wm.role IN ('owner', 'editor')
         )
     );
+
+-- ══════════════════════════════════════════════════
+-- 17. FINANCE OS: MARKETING SPEND (ROI Tracking)
+-- Chi tieu thuc te tren tung kenh marketing theo thang
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS marketing_spend (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    channel_id UUID NOT NULL REFERENCES marketing_channels(id) ON DELETE CASCADE,
+    month TEXT NOT NULL, -- 'YYYY-MM' format
+    spend NUMERIC(15,0) NOT NULL DEFAULT 0,
+    leads INT NOT NULL DEFAULT 0,
+    customers INT NOT NULL DEFAULT 0,
+    revenue_attributed NUMERIC(15,0) NOT NULL DEFAULT 0,
+    notes TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(channel_id, month)
+);
+
+-- ══════════════════════════════════════════════════
+-- 18. FINANCE OS: MARKETING SPEND RLS
+-- ══════════════════════════════════════════════════
+ALTER TABLE marketing_spend ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Members can view marketing_spend" ON marketing_spend
+    FOR SELECT USING (
+        workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid())
+    );
+CREATE POLICY "Owner/Editor can manage marketing_spend" ON marketing_spend
+    FOR ALL USING (
+        workspace_id IN (
+            SELECT workspace_id FROM workspace_members
+            WHERE user_id = auth.uid() AND role IN ('owner', 'editor')
+        )
+    );
+
+-- ══════════════════════════════════════════════════
+-- 19. FINANCE OS: CASHFLOW FORECASTS (AI-powered)
+-- Du bao dong tien tu lich su daily_cashflow
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS cashflow_forecasts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    scenario TEXT NOT NULL DEFAULT 'base', -- 'base', 'optimistic', 'pessimistic', 'custom'
+    forecast_months INT NOT NULL DEFAULT 6,
+    monthly_data JSONB NOT NULL DEFAULT '[]'::jsonb, -- [{month, revenue, expense, net, confidence}]
+    assumptions JSONB NOT NULL DEFAULT '{}'::jsonb, -- {growth_rate, seasonal_factors, notes}
+    ai_summary TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ══════════════════════════════════════════════════
+-- 20. FINANCE OS: CASHFLOW FORECASTS RLS
+-- ══════════════════════════════════════════════════
+ALTER TABLE cashflow_forecasts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Members can view cashflow_forecasts" ON cashflow_forecasts
+    FOR SELECT USING (
+        workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid())
+    );
+CREATE POLICY "Owner/Editor can manage cashflow_forecasts" ON cashflow_forecasts
+    FOR ALL USING (
+        workspace_id IN (
+            SELECT workspace_id FROM workspace_members
+            WHERE user_id = auth.uid() AND role IN ('owner', 'editor')
+        )
+    );
+
+-- ══════════════════════════════════════════════════
+-- 21. ERP: CONTACTS
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS erp_contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    type TEXT NOT NULL DEFAULT 'customer' CHECK (type IN ('customer', 'supplier')),
+    name TEXT NOT NULL,
+    phone TEXT DEFAULT '',
+    email TEXT DEFAULT '',
+    tax_code TEXT DEFAULT '',
+    address TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE erp_contacts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Members can view erp_contacts" ON erp_contacts
+    FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
+CREATE POLICY "Owner/Editor can manage erp_contacts" ON erp_contacts
+    FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));
+
+-- ══════════════════════════════════════════════════
+-- 22. ERP: INVOICES
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS erp_invoices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    type TEXT NOT NULL DEFAULT 'income' CHECK (type IN ('income', 'expense')),
+    contact_id UUID REFERENCES erp_contacts(id) ON DELETE SET NULL,
+    contact_name TEXT NOT NULL DEFAULT '',
+    description TEXT DEFAULT '',
+    category TEXT NOT NULL DEFAULT 'Doanh thu',
+    amount NUMERIC(15,0) NOT NULL DEFAULT 0,
+    vat_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
+    vat_amount NUMERIC(15,0) NOT NULL DEFAULT 0,
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date DATE,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue')),
+    items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE erp_invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Members can view erp_invoices" ON erp_invoices
+    FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
+CREATE POLICY "Owner/Editor can manage erp_invoices" ON erp_invoices
+    FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));
+
+-- ══════════════════════════════════════════════════
+-- 23. ERP: PRODUCTS
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS erp_products (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    sku TEXT DEFAULT '',
+    unit TEXT NOT NULL DEFAULT 'cai',
+    unit_cost NUMERIC(15,0) NOT NULL DEFAULT 0,
+    current_qty INT NOT NULL DEFAULT 0,
+    reorder_level INT NOT NULL DEFAULT 10,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE erp_products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Members can view erp_products" ON erp_products
+    FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
+CREATE POLICY "Owner/Editor can manage erp_products" ON erp_products
+    FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));
+
+-- ══════════════════════════════════════════════════
+-- 24. ERP: STOCK MOVEMENTS
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS erp_stock_movements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES erp_products(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('in', 'out')),
+    qty INT NOT NULL DEFAULT 0,
+    date TIMESTAMPTZ DEFAULT now(),
+    note TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE erp_stock_movements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Members can view erp_stock_movements" ON erp_stock_movements
+    FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
+CREATE POLICY "Owner/Editor can manage erp_stock_movements" ON erp_stock_movements
+    FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));
+
+-- ══════════════════════════════════════════════════
+-- 25. ERP: BUDGETS
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS erp_budgets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    year INT NOT NULL,
+    category TEXT NOT NULL,
+    planned NUMERIC(15,0) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(workspace_id, year, category)
+);
+
+ALTER TABLE erp_budgets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Members can view erp_budgets" ON erp_budgets
+    FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
+CREATE POLICY "Owner/Editor can manage erp_budgets" ON erp_budgets
+    FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));
+
+-- ══════════════════════════════════════════════════
+-- 26. ERP: AUDIT LOG
+-- ══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS erp_audit_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    user_email TEXT DEFAULT '',
+    action TEXT NOT NULL CHECK (action IN ('create', 'update', 'delete')),
+    entity TEXT NOT NULL,
+    entity_id TEXT DEFAULT '',
+    description TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE erp_audit_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Members can view erp_audit_log" ON erp_audit_log
+    FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
+CREATE POLICY "Owner/Editor can manage erp_audit_log" ON erp_audit_log
+    FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));

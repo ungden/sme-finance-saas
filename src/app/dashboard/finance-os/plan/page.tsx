@@ -5,11 +5,10 @@ import Link from "next/link";
 import {
     ArrowLeft, BrainCircuit, Loader2, Plus, Trash2, CheckCircle, Clock,
     Archive, TrendingUp, TrendingDown, Target, Calendar, ChevronDown, ChevronUp,
-    AlertTriangle,
 } from "lucide-react";
 import { useFinanceOS } from "@/context/FinanceOSContext";
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ComposedChart, Line, Cell, Legend,
 } from "recharts";
 import type { AIPlanResponse, PlanStatus } from "@/lib/types";
