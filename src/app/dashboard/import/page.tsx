@@ -2,14 +2,17 @@
 
 import React, { useState, useCallback } from "react";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, X } from "lucide-react";
-import type { Invoice, ExpenseCategory } from "@/lib/types";
-import { EXPENSE_CATEGORIES } from "@/lib/types";
+import { useERP } from "@/context/ERPContext";
+import type { ExpenseCategory } from "@/lib/types";
 
 export default function ImportPage() {
+    const erp = useERP();
+    const { isLoaded } = erp;
     const [file, setFile] = useState<File | null>(null);
     const [rows, setRows] = useState<string[][]>([]);
     const [headers, setHeaders] = useState<string[]>([]);
     const [imported, setImported] = useState(false);
+    const [importing, setImporting] = useState(false);
     const [error, setError] = useState('');
 
     const handleFile = useCallback((f: File) => {
@@ -21,7 +24,7 @@ export default function ImportPage() {
             const text = e.target?.result as string;
             if (!text) return;
             const lines = text.split('\n').filter(l => l.trim());
-            if (lines.length < 2) { setError('File cần ít nhất 2 dòng (header + data)'); return; }
+            if (lines.length < 2) { setError('File can it nhat 2 dong (header + data)'); return; }
             const parseLine = (line: string) => line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
             setHeaders(parseLine(lines[0]));
             setRows(lines.slice(1).map(parseLine));
@@ -33,44 +36,54 @@ export default function ImportPage() {
         e.preventDefault();
         const f = e.dataTransfer.files[0];
         if (f && (f.name.endsWith('.csv') || f.name.endsWith('.txt'))) handleFile(f);
-        else setError('Vui lòng upload file .csv');
+        else setError('Vui long upload file .csv');
     };
 
-    const handleImport = () => {
+    const handleImport = async () => {
         try {
+            setImporting(true);
             // Try to map columns intelligently
-            const dateIdx = headers.findIndex(h => /ngày|date/i.test(h));
-            const nameIdx = headers.findIndex(h => /tên|name|đối tác|khách/i.test(h));
-            const amountIdx = headers.findIndex(h => /số tiền|amount|tiền/i.test(h));
-            const typeIdx = headers.findIndex(h => /loại|type|thu|chi/i.test(h));
-            const descIdx = headers.findIndex(h => /mô tả|desc|ghi chú|note/i.test(h));
+            const dateIdx = headers.findIndex(h => /ngay|ngày|date/i.test(h));
+            const nameIdx = headers.findIndex(h => /ten|tên|name|doi tac|đối tác|khach|khách/i.test(h));
+            const amountIdx = headers.findIndex(h => /so tien|số tiền|amount|tien|tiền/i.test(h));
+            const typeIdx = headers.findIndex(h => /loai|loại|type|thu|chi/i.test(h));
+            const descIdx = headers.findIndex(h => /mo ta|mô tả|desc|ghi chu|ghi chú|note/i.test(h));
 
-            if (amountIdx === -1) { setError('Không tìm thấy cột "Số tiền". Vui lòng đặt tên cột rõ ràng.'); return; }
+            if (amountIdx === -1) { setError('Khong tim thay cot "So tien". Vui long dat ten cot ro rang.'); setImporting(false); return; }
 
-            const existingInvoices = JSON.parse(localStorage.getItem('rp_invoices') || '[]');
-            const newInvoices: Invoice[] = rows.map(row => {
+            let importCount = 0;
+            for (const row of rows) {
                 const amount = Math.abs(Number(row[amountIdx]?.replace(/[,.]/g, '') || 0));
-                const isExpense = typeIdx >= 0 ? /chi|expense|out/i.test(row[typeIdx]) : amount < 0;
-                return {
-                    id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
-                    type: isExpense ? 'expense' as const : 'income' as const,
-                    contactId: '', contactName: nameIdx >= 0 ? row[nameIdx] || '' : '',
+                if (amount <= 0) continue;
+
+                const isExpense = typeIdx >= 0 ? /chi|expense|out/i.test(row[typeIdx]) : false;
+                await erp.addInvoice({
+                    type: isExpense ? 'expense' : 'income',
+                    contactId: '',
+                    contactName: nameIdx >= 0 ? row[nameIdx] || '' : '',
                     description: descIdx >= 0 ? row[descIdx] || '' : '',
-                    category: isExpense ? 'Khác' as ExpenseCategory : 'Doanh thu' as const,
-                    amount, vatRate: 0, vatAmount: 0,
+                    category: isExpense ? 'Khac' as unknown as ExpenseCategory : 'Doanh thu',
+                    amount,
+                    vatRate: 0,
+                    vatAmount: 0,
                     date: dateIdx >= 0 ? row[dateIdx] || new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                     dueDate: dateIdx >= 0 ? row[dateIdx] || '' : '',
-                    status: 'paid' as const,
+                    status: 'paid',
                     items: [],
-                };
-            }).filter(inv => inv.amount > 0);
+                });
+                importCount++;
+            }
 
-            localStorage.setItem('rp_invoices', JSON.stringify([...newInvoices, ...existingInvoices]));
             setImported(true);
         } catch (err) {
-            setError('Lỗi khi import. Vui lòng kiểm tra format file.');
+            console.error("Import failed:", err);
+            setError('Loi khi import. Vui long kiem tra format file.');
+        } finally {
+            setImporting(false);
         }
     };
+
+    if (!isLoaded) return null;
 
     return (
         <div className="space-y-6 max-w-[1000px] mx-auto pb-20">
@@ -78,7 +91,7 @@ export default function ImportPage() {
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <FileSpreadsheet className="w-6 h-6 text-emerald-600" /> Import Excel / CSV
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">Đổ dữ liệu từ file CSV vào hệ thống hóa đơn.</p>
+                <p className="text-sm text-slate-500 mt-1">Do du lieu tu file CSV vao he thong hoa don.</p>
             </div>
 
             {/* Drop Zone */}
@@ -90,8 +103,8 @@ export default function ImportPage() {
                     onClick={() => document.getElementById('csv-input')?.click()}
                 >
                     <Upload className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <p className="text-lg font-bold text-slate-600 mb-2">Kéo thả file .csv vào đây</p>
-                    <p className="text-sm text-slate-400">hoặc click để chọn file</p>
+                    <p className="text-lg font-bold text-slate-600 mb-2">Keo tha file .csv vao day</p>
+                    <p className="text-sm text-slate-400">hoac click de chon file</p>
                     <input id="csv-input" type="file" accept=".csv,.txt" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
                 </div>
             )}
@@ -106,7 +119,7 @@ export default function ImportPage() {
             {file && rows.length > 0 && !imported && (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-700">📄 {file.name} — {rows.length} dòng dữ liệu</p>
+                        <p className="text-sm font-medium text-slate-700">{file.name} — {rows.length} dong du lieu</p>
                         <button onClick={() => { setFile(null); setRows([]); setHeaders([]); }} className="text-sm text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
@@ -122,10 +135,18 @@ export default function ImportPage() {
                                 ))}
                             </tbody>
                         </table>
-                        {rows.length > 10 && <p className="text-xs text-slate-400 p-3">... và {rows.length - 10} dòng nữa</p>}
+                        {rows.length > 10 && <p className="text-xs text-slate-400 p-3">... va {rows.length - 10} dong nua</p>}
                     </div>
-                    <button onClick={handleImport} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2">
-                        <CheckCircle2 className="w-5 h-5" /> Import {rows.length} giao dịch vào Hóa đơn
+                    <button
+                        onClick={handleImport}
+                        disabled={importing}
+                        className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        {importing ? (
+                            <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Dang import...</>
+                        ) : (
+                            <><CheckCircle2 className="w-5 h-5" /> Import {rows.length} giao dich vao Hoa don</>
+                        )}
                     </button>
                 </div>
             )}
@@ -133,22 +154,22 @@ export default function ImportPage() {
             {imported && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center">
                     <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-emerald-800 mb-2">Import thành công!</h3>
-                    <p className="text-sm text-emerald-600">{rows.length} giao dịch đã được thêm vào mục Hóa đơn & Thu Chi.</p>
-                    <button onClick={() => { setFile(null); setRows([]); setHeaders([]); setImported(false); }} className="mt-4 px-6 py-2 bg-white border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition">Import file khác</button>
+                    <h3 className="text-lg font-bold text-emerald-800 mb-2">Import thanh cong!</h3>
+                    <p className="text-sm text-emerald-600">{rows.length} giao dich da duoc them vao muc Hoa don & Thu Chi.</p>
+                    <button onClick={() => { setFile(null); setRows([]); setHeaders([]); setImported(false); }} className="mt-4 px-6 py-2 bg-white border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition">Import file khac</button>
                 </div>
             )}
 
             {/* Instructions */}
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm text-slate-600 space-y-2">
-                <h3 className="font-bold text-slate-800">📋 Hướng dẫn format CSV:</h3>
-                <p>Dòng đầu tiên là header. Hệ thống tự nhận diện các cột:</p>
+                <h3 className="font-bold text-slate-800">Huong dan format CSV:</h3>
+                <p>Dong dau tien la header. He thong tu nhan dien cac cot:</p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-500">
-                    <li><b>Ngày</b> (date) — Ngày giao dịch</li>
-                    <li><b>Tên / Đối tác</b> — Tên khách hàng hoặc NCC</li>
-                    <li><b>Số tiền</b> (amount) — Giá trị giao dịch (bắt buộc)</li>
-                    <li><b>Loại</b> (type) — &ldquo;Thu&rdquo; hoặc &ldquo;Chi&rdquo;</li>
-                    <li><b>Mô tả</b> (note) — Ghi chú</li>
+                    <li><b>Ngay</b> (date) — Ngay giao dich</li>
+                    <li><b>Ten / Doi tac</b> — Ten khach hang hoac NCC</li>
+                    <li><b>So tien</b> (amount) — Gia tri giao dich (bat buoc)</li>
+                    <li><b>Loai</b> (type) — &ldquo;Thu&rdquo; hoac &ldquo;Chi&rdquo;</li>
+                    <li><b>Mo ta</b> (note) — Ghi chu</li>
                 </ul>
             </div>
         </div>

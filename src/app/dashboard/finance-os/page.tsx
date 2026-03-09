@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
     TrendingUp, TrendingDown, DollarSign, Activity,
     Settings2, Building2, ArrowDownUp, Wallet,
-    AlertTriangle, CheckCircle,
+    AlertTriangle, CheckCircle, Sparkles, Megaphone, LineChart, FileDown,
 } from "lucide-react";
 import { useFinanceOS } from "@/context/FinanceOSContext";
 import { ALLOCATION_CATEGORY_LABELS, ALLOCATION_CATEGORY_COLORS } from "@/lib/types";
@@ -82,6 +82,10 @@ export default function FinanceOSDashboard() {
                     { href: "/dashboard/finance-os/departments", label: "Phong ban", icon: Building2, color: "bg-purple-50 text-purple-600" },
                     { href: "/dashboard/finance-os/cashflow", label: "Dong tien", icon: ArrowDownUp, color: "bg-green-50 text-green-600" },
                     { href: "/dashboard/finance-os/salary", label: "Luong & Budget", icon: Wallet, color: "bg-amber-50 text-amber-600" },
+                    { href: "/dashboard/finance-os/plan", label: "AI Planner", icon: Sparkles, color: "bg-rose-50 text-rose-600" },
+                    { href: "/dashboard/finance-os/marketing", label: "Marketing ROI", icon: Megaphone, color: "bg-orange-50 text-orange-600" },
+                    { href: "/dashboard/finance-os/forecast", label: "Du bao CF", icon: LineChart, color: "bg-cyan-50 text-cyan-600" },
+                    { href: "/dashboard/finance-os/reports", label: "Bao cao", icon: FileDown, color: "bg-slate-100 text-slate-600" },
                 ].map(link => (
                     <Link
                         key={link.href}

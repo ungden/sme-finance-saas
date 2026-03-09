@@ -2,7 +2,8 @@
 
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { DollarSign, Landmark, TrendingUp, AlertTriangle, Building2, Wallet, Download, CheckCircle2, Info, Lightbulb } from "lucide-react";
+import Link from "next/link";
+import { DollarSign, Landmark, TrendingUp, AlertTriangle, Building2, Wallet, Download, CheckCircle2, Info, Lightbulb, BookOpen, Users, Building, BrainCircuit, BarChart3 } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { generateInsights, InsightItem } from "@/utils/ai-insights";
 
@@ -74,9 +75,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Prepare derived calculations for all years
-  const derivedYears = yearsData.map((y, index) => {
-    const prevY = index > 0 ? yearsData[index - 1] : null;
+  // Prepare derived calculations for all years (use reduce so each year can reference the previous derived year)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const derivedYears: any[] = [];
+  for (let index = 0; index < yearsData.length; index++) {
+    const y = yearsData[index];
+    const prevRaw = index > 0 ? yearsData[index - 1] : null;
+    const prevDerived = index > 0 ? derivedYears[index - 1] : null;
 
     // Income Statement
     const grossProfit = y.revenue - y.cogs;
@@ -92,7 +97,7 @@ export default function DashboardPage() {
     const currentLiabilities = y.accountsPayable + y.shortTermDebt;
     const totalLiabilities = currentLiabilities + y.longTermDebt;
 
-    const startRetainedEarnings = prevY ? (prevY as any)._calculated.retainedEarnings : 0;
+    const startRetainedEarnings = prevDerived ? prevDerived._calculated.retainedEarnings : 0;
     const retainedEarnings = startRetainedEarnings + netIncome;
     const totalEquity = y.ownerCapital + retainedEarnings;
 
@@ -102,20 +107,20 @@ export default function DashboardPage() {
     // Cash Flow Statement (Simplified Indirect Method)
     let opsCF = 0, invCF = 0, finCF = 0, netCashFlow = 0;
 
-    if (prevY) {
-      const deltaAR = y.accountsReceivable - prevY.accountsReceivable;
-      const deltaInv = y.inventory - prevY.inventory;
-      const deltaAP = y.accountsPayable - prevY.accountsPayable;
+    if (prevRaw) {
+      const deltaAR = y.accountsReceivable - prevRaw.accountsReceivable;
+      const deltaInv = y.inventory - prevRaw.inventory;
+      const deltaAP = y.accountsPayable - prevRaw.accountsPayable;
       const deltaWC = deltaAR + deltaInv - deltaAP;
 
       opsCF = netIncome + y.depreciation - deltaWC;
 
       // CapEx = change in PPE + depreciation
-      const capex = (y.propertyPlantEquipment - prevY.propertyPlantEquipment) + y.depreciation;
+      const capex = (y.propertyPlantEquipment - prevRaw.propertyPlantEquipment) + y.depreciation;
       invCF = -capex;
 
-      const deltaDebt = (y.shortTermDebt - prevY.shortTermDebt) + (y.longTermDebt - prevY.longTermDebt);
-      const deltaCapital = y.ownerCapital - prevY.ownerCapital;
+      const deltaDebt = (y.shortTermDebt - prevRaw.shortTermDebt) + (y.longTermDebt - prevRaw.longTermDebt);
+      const deltaCapital = y.ownerCapital - prevRaw.ownerCapital;
       finCF = deltaDebt + deltaCapital;
 
       netCashFlow = opsCF + invCF + finCF;
@@ -128,15 +133,15 @@ export default function DashboardPage() {
       netCashFlow = opsCF + invCF + finCF;
     }
 
-    return {
+    derivedYears.push({
       ...y,
       _calculated: {
         grossProfit, ebitda, ebit, ebt, netIncome,
         currentAssets, totalAssets, currentLiabilities, totalLiabilities, retainedEarnings, totalEquity, totalLiabilitiesAndEquity, isBalanced,
         opsCF, invCF, finCF, netCashFlow
       }
-    };
-  });
+    });
+  }
 
   const currentYearData = derivedYears[derivedYears.length - 1];
   const aiInsights = generateInsights(derivedYears);
@@ -162,6 +167,25 @@ export default function DashboardPage() {
           {isExporting ? <div className="animate-spin rounded-full border-b-2 border-white h-4 w-4"></div> : <Download className="w-4 h-4" />}
           <span>{isExporting ? "Đang tạo PDF..." : "Xuất Báo Cáo PDF"}</span>
         </button>
+      </div>
+
+      {/* ── QUICK TOOLS ── */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        {[
+          { href: "/dashboard/input", label: "Nhap Lieu", icon: BookOpen, color: "bg-blue-50 text-blue-600" },
+          { href: "/dashboard/hr", label: "Nhan Su", icon: Users, color: "bg-violet-50 text-violet-600" },
+          { href: "/dashboard/facilities", label: "Mat Bang", icon: Building, color: "bg-amber-50 text-amber-600" },
+          { href: "/dashboard/forecast", label: "AI Forecast", icon: BrainCircuit, color: "bg-emerald-50 text-emerald-600" },
+          { href: "/dashboard/consolidated", label: "Tong Hop", icon: BarChart3, color: "bg-pink-50 text-pink-600" },
+          { href: "/dashboard/boe", label: "BOE", icon: TrendingUp, color: "bg-cyan-50 text-cyan-600" },
+        ].map(t => (
+          <Link key={t.href} href={t.href} className="flex flex-col items-center gap-1.5 bg-white rounded-xl border border-slate-200 p-3 hover:shadow-md transition-shadow text-center">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${t.color}`}>
+              <t.icon className="w-4.5 h-4.5" />
+            </div>
+            <span className="text-xs font-semibold text-slate-600">{t.label}</span>
+          </Link>
+        ))}
       </div>
 
       <div ref={dashboardRef} className="space-y-6 bg-slate-50 p-2 sm:p-6 rounded-2xl">

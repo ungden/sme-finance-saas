@@ -3,36 +3,30 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, BookOpen, Landmark, TrendingUp, LogOut, Loader2, Plus, FolderSync, Users, Building, BarChart3, GitBranch, FileText, UserCircle, Upload, Target, Package, Receipt, Clock, BrainCircuit, Workflow, Settings2, Building2, ArrowDownUp, Wallet, Sparkles, FileDown, Megaphone, LineChart } from "lucide-react";
+import { LayoutDashboard, Landmark, LogOut, Loader2, Plus, FolderSync, GitBranch, FileText, Workflow, FileDown } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { createClient } from "@/utils/supabase/client";
 
+/* ── ERP sub-paths (used for sidebar active highlight) ── */
+const ERP_PATHS = [
+    "/dashboard/erp", "/dashboard/invoices", "/dashboard/contacts",
+    "/dashboard/inventory", "/dashboard/budget", "/dashboard/tax",
+    "/dashboard/import", "/dashboard/audit",
+];
+
+/* ── Tong Quan sub-paths ── */
+const OVERVIEW_PATHS = [
+    "/dashboard", "/dashboard/input", "/dashboard/hr",
+    "/dashboard/facilities", "/dashboard/forecast",
+    "/dashboard/consolidated", "/dashboard/boe",
+];
+
 const NAV_ITEMS = [
-    { href: "/dashboard", label: "Tổng Quan", icon: LayoutDashboard, exact: true },
-    { href: "/dashboard/invoices", label: "Hóa đơn", icon: FileText, exact: false },
-    { href: "/dashboard/contacts", label: "Đối tác", icon: UserCircle, exact: false },
-    { href: "/dashboard/input", label: "Nhập Liệu", icon: BookOpen, exact: false },
-    { href: "/dashboard/hr", label: "Nhân Sự", icon: Users, exact: false },
-    { href: "/dashboard/facilities", label: "Mặt Bằng", icon: Building, exact: false },
-    { href: "/dashboard/inventory", label: "Kho", icon: Package, exact: false },
-    { href: "/dashboard/budget", label: "Ngân sách", icon: Target, exact: false },
-    { href: "/dashboard/tax", label: "Thuế & VAT", icon: Receipt, exact: false },
-    { href: "/dashboard/forecast", label: "AI Forecast", icon: BrainCircuit, exact: false },
-    { href: "/dashboard/import", label: "Import CSV", icon: Upload, exact: false },
-    { href: "/dashboard/consolidated", label: "Tổng Hợp", icon: BarChart3, exact: false },
-    { href: "/dashboard/boe", label: "BOE", icon: TrendingUp, exact: false },
-    { href: "/dashboard/audit", label: "Nhật ký", icon: Clock, exact: false },
-    // ── Finance OS ──
-    { href: "/dashboard/finance-os", label: "Finance OS", icon: Workflow, exact: true },
-    { href: "/dashboard/finance-os/rules", label: "Phân bổ %", icon: Settings2, exact: false },
-    { href: "/dashboard/finance-os/departments", label: "Phòng ban", icon: Building2, exact: false },
-    { href: "/dashboard/finance-os/cashflow", label: "Dòng tiền", icon: ArrowDownUp, exact: false },
-    { href: "/dashboard/finance-os/salary", label: "Lương & Budget", icon: Wallet, exact: false },
-    { href: "/dashboard/finance-os/plan", label: "AI Planner", icon: Sparkles, exact: false },
-    { href: "/dashboard/finance-os/marketing", label: "Marketing ROI", icon: Megaphone, exact: false },
-    { href: "/dashboard/finance-os/forecast", label: "Du bao CF", icon: LineChart, exact: false },
-    { href: "/dashboard/finance-os/reports", label: "Bao cao", icon: FileDown, exact: false },
+    { href: "/dashboard", label: "Tổng Quan", icon: LayoutDashboard, match: OVERVIEW_PATHS, excludeMatch: [] as string[] },
+    { href: "/dashboard/erp", label: "ERP", icon: FileText, match: ERP_PATHS, excludeMatch: [] as string[] },
+    { href: "/dashboard/finance-os", label: "Finance OS", icon: Workflow, match: ["/dashboard/finance-os"], excludeMatch: ["/dashboard/finance-os/reports"] },
+    { href: "/dashboard/finance-os/reports", label: "Báo cáo", icon: FileDown, match: ["/dashboard/finance-os/reports"], excludeMatch: [] },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -48,8 +42,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
 
     const isActive = (item: typeof NAV_ITEMS[0]) => {
-        if (item.exact) return pathname === item.href;
-        return pathname.startsWith(item.href);
+        const excluded = item.excludeMatch.some(p => pathname === p || pathname.startsWith(p + "/"));
+        if (excluded) return false;
+        return item.match.some(p => pathname === p || pathname.startsWith(p + "/"));
     };
 
     return (

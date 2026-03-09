@@ -20,7 +20,7 @@ export default function ConsolidatedPage() {
     }>();
 
     branches.forEach(branch => {
-        branch.years_data.forEach(y => {
+        (branch.years_data || []).forEach(y => {
             const existing = consolidatedYears.get(y.year) || {
                 revenue: 0, cogs: 0, operatingExpenses: 0, depreciation: 0,
                 interestExpense: 0, taxes: 0, cash: 0, totalEmployees: 0, totalFacilities: 0,
@@ -39,8 +39,8 @@ export default function ConsolidatedPage() {
         });
     });
 
-    const totalEmployees = branches.reduce((sum, b) => sum + b.employees.length, 0);
-    const totalFacilities = branches.reduce((sum, b) => sum + b.facilities.length, 0);
+    const totalEmployees = branches.reduce((sum, b) => sum + (b.employees || []).length, 0);
+    const totalFacilities = branches.reduce((sum, b) => sum + (b.facilities || []).length, 0);
 
     const years = Array.from(consolidatedYears.entries()).sort((a, b) => a[0] - b[0]);
 
@@ -122,8 +122,9 @@ export default function ConsolidatedPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {branches.map(branch => {
-                                const latestYear = branch.years_data.length > 0
-                                    ? branch.years_data[branch.years_data.length - 1]
+                                const yearsArr = branch.years_data || [];
+                                const latestYear = yearsArr.length > 0
+                                    ? yearsArr[yearsArr.length - 1]
                                     : null;
                                 const net = latestYear
                                     ? latestYear.revenue - latestYear.cogs - latestYear.operatingExpenses - latestYear.depreciation - latestYear.interestExpense - latestYear.taxes
@@ -135,7 +136,7 @@ export default function ConsolidatedPage() {
                                         <td className="px-4 py-3 text-right text-red-600">{latestYear ? formatVND(latestYear.cogs) : "—"}</td>
                                         <td className="px-4 py-3 text-right text-red-600">{latestYear ? formatVND(latestYear.operatingExpenses) : "—"}</td>
                                         <td className={`px-4 py-3 text-right font-bold ${net >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatVND(net)}</td>
-                                        <td className="px-4 py-3 text-center text-slate-500">{branch.employees.length}</td>
+                                        <td className="px-4 py-3 text-center text-slate-500">{(branch.employees || []).length}</td>
                                     </tr>
                                 );
                             })}
