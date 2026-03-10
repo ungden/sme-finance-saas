@@ -597,3 +597,45 @@ CREATE POLICY "Members can view erp_audit_log" ON erp_audit_log
     FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()));
 CREATE POLICY "Owner/Editor can manage erp_audit_log" ON erp_audit_log
     FOR ALL USING (workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid() AND role IN ('owner', 'editor')));
+
+-- ══════════════════════════════════════════════════
+-- 27. INVITE MEMBER BY EMAIL (RPC Function)
+-- Cho phép owner mời thành viên bằng email
+-- ══════════════════════════════════════════════════
+CREATE OR REPLACE FUNCTION invite_member_by_email(
+    p_workspace_id UUID,
+    p_email TEXT,
+    p_role member_role
+)
+RETURNS VOID AS $$
+DECLARE
+    v_user_id UUID;
+    v_caller_id UUID;
+BEGIN
+    -- Verify caller is workspace owner
+    v_caller_id := auth.uid();
+    IF NOT EXISTS (
+        SELECT 1 FROM workspaces WHERE id = p_workspace_id AND owner_id = v_caller_id
+    ) THEN
+        RAISE EXCEPTION 'Only workspace owner can invite members';
+    END IF;
+
+    -- Look up user by email
+    SELECT id INTO v_user_id FROM auth.users WHERE email = p_email;
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Không tìm thấy tài khoản với email: %', p_email;
+    END IF;
+
+    -- Check if already a member
+    IF EXISTS (
+        SELECT 1 FROM workspace_members
+        WHERE workspace_id = p_workspace_id AND user_id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'Người dùng này đã là thành viên của workspace';
+    END IF;
+
+    -- Insert member
+    INSERT INTO workspace_members (workspace_id, user_id, role)
+    VALUES (p_workspace_id, v_user_id, p_role);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

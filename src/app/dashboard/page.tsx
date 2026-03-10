@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { DollarSign, Landmark, TrendingUp, AlertTriangle, Building2, Wallet, Download, CheckCircle2, Info, Lightbulb, BookOpen, Users, Building, BrainCircuit, BarChart3 } from "lucide-react";
@@ -75,73 +75,76 @@ export default function DashboardPage() {
     }
   };
 
-  // Prepare derived calculations for all years (use reduce so each year can reference the previous derived year)
+  // Prepare derived calculations for all years, memoized to avoid re-computation on every render
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const derivedYears: any[] = [];
-  for (let index = 0; index < yearsData.length; index++) {
-    const y = yearsData[index];
-    const prevRaw = index > 0 ? yearsData[index - 1] : null;
-    const prevDerived = index > 0 ? derivedYears[index - 1] : null;
+  const derivedYears: any[] = useMemo(() => {
+    const result: any[] = [];
+    for (let index = 0; index < yearsData.length; index++) {
+      const y = yearsData[index];
+      const prevRaw = index > 0 ? yearsData[index - 1] : null;
+      const prevDerived = index > 0 ? result[index - 1] : null;
 
-    // Income Statement
-    const grossProfit = y.revenue - y.cogs;
-    const ebitda = grossProfit - y.operatingExpenses;
-    const ebit = ebitda - y.depreciation;
-    const ebt = ebit - y.interestExpense;
-    const netIncome = ebt - y.taxes;
+      // Income Statement
+      const grossProfit = y.revenue - y.cogs;
+      const ebitda = grossProfit - y.operatingExpenses;
+      const ebit = ebitda - y.depreciation;
+      const ebt = ebit - y.interestExpense;
+      const netIncome = ebt - y.taxes;
 
-    // Balance Sheet
-    const currentAssets = y.cash + y.accountsReceivable + y.inventory;
-    const totalAssets = currentAssets + y.propertyPlantEquipment;
+      // Balance Sheet
+      const currentAssets = y.cash + y.accountsReceivable + y.inventory;
+      const totalAssets = currentAssets + y.propertyPlantEquipment;
 
-    const currentLiabilities = y.accountsPayable + y.shortTermDebt;
-    const totalLiabilities = currentLiabilities + y.longTermDebt;
+      const currentLiabilities = y.accountsPayable + y.shortTermDebt;
+      const totalLiabilities = currentLiabilities + y.longTermDebt;
 
-    const startRetainedEarnings = prevDerived ? prevDerived._calculated.retainedEarnings : 0;
-    const retainedEarnings = startRetainedEarnings + netIncome;
-    const totalEquity = y.ownerCapital + retainedEarnings;
+      const startRetainedEarnings = prevDerived ? prevDerived._calculated.retainedEarnings : 0;
+      const retainedEarnings = startRetainedEarnings + netIncome;
+      const totalEquity = y.ownerCapital + retainedEarnings;
 
-    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
-    const isBalanced = totalAssets === totalLiabilitiesAndEquity;
+      const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+      const isBalanced = totalAssets === totalLiabilitiesAndEquity;
 
-    // Cash Flow Statement (Simplified Indirect Method)
-    let opsCF = 0, invCF = 0, finCF = 0, netCashFlow = 0;
+      // Cash Flow Statement (Simplified Indirect Method)
+      let opsCF = 0, invCF = 0, finCF = 0, netCashFlow = 0;
 
-    if (prevRaw) {
-      const deltaAR = y.accountsReceivable - prevRaw.accountsReceivable;
-      const deltaInv = y.inventory - prevRaw.inventory;
-      const deltaAP = y.accountsPayable - prevRaw.accountsPayable;
-      const deltaWC = deltaAR + deltaInv - deltaAP;
+      if (prevRaw) {
+        const deltaAR = y.accountsReceivable - prevRaw.accountsReceivable;
+        const deltaInv = y.inventory - prevRaw.inventory;
+        const deltaAP = y.accountsPayable - prevRaw.accountsPayable;
+        const deltaWC = deltaAR + deltaInv - deltaAP;
 
-      opsCF = netIncome + y.depreciation - deltaWC;
+        opsCF = netIncome + y.depreciation - deltaWC;
 
-      // CapEx = change in PPE + depreciation
-      const capex = (y.propertyPlantEquipment - prevRaw.propertyPlantEquipment) + y.depreciation;
-      invCF = -capex;
+        // CapEx = change in PPE + depreciation
+        const capex = (y.propertyPlantEquipment - prevRaw.propertyPlantEquipment) + y.depreciation;
+        invCF = -capex;
 
-      const deltaDebt = (y.shortTermDebt - prevRaw.shortTermDebt) + (y.longTermDebt - prevRaw.longTermDebt);
-      const deltaCapital = y.ownerCapital - prevRaw.ownerCapital;
-      finCF = deltaDebt + deltaCapital;
+        const deltaDebt = (y.shortTermDebt - prevRaw.shortTermDebt) + (y.longTermDebt - prevRaw.longTermDebt);
+        const deltaCapital = y.ownerCapital - prevRaw.ownerCapital;
+        finCF = deltaDebt + deltaCapital;
 
-      netCashFlow = opsCF + invCF + finCF;
-    } else {
-      // First year (assume starting from 0)
-      opsCF = netIncome + y.depreciation - (y.accountsReceivable + y.inventory - y.accountsPayable);
-      const capex = y.propertyPlantEquipment + y.depreciation;
-      invCF = -capex;
-      finCF = y.shortTermDebt + y.longTermDebt + y.ownerCapital;
-      netCashFlow = opsCF + invCF + finCF;
-    }
-
-    derivedYears.push({
-      ...y,
-      _calculated: {
-        grossProfit, ebitda, ebit, ebt, netIncome,
-        currentAssets, totalAssets, currentLiabilities, totalLiabilities, retainedEarnings, totalEquity, totalLiabilitiesAndEquity, isBalanced,
-        opsCF, invCF, finCF, netCashFlow
+        netCashFlow = opsCF + invCF + finCF;
+      } else {
+        // First year (assume starting from 0)
+        opsCF = netIncome + y.depreciation - (y.accountsReceivable + y.inventory - y.accountsPayable);
+        const capex = y.propertyPlantEquipment + y.depreciation;
+        invCF = -capex;
+        finCF = y.shortTermDebt + y.longTermDebt + y.ownerCapital;
+        netCashFlow = opsCF + invCF + finCF;
       }
-    });
-  }
+
+      result.push({
+        ...y,
+        _calculated: {
+          grossProfit, ebitda, ebit, ebt, netIncome,
+          currentAssets, totalAssets, currentLiabilities, totalLiabilities, retainedEarnings, totalEquity, totalLiabilitiesAndEquity, isBalanced,
+          opsCF, invCF, finCF, netCashFlow
+        }
+      });
+    }
+    return result;
+  }, [yearsData]);
 
   const currentYearData = derivedYears[derivedYears.length - 1];
   const aiInsights = generateInsights(derivedYears);

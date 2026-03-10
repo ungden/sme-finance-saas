@@ -99,46 +99,89 @@ export function ERPProvider({ children }: { children: React.ReactNode }) {
         loadData();
     }, [loadData]);
 
-    // ── Invoice mutations ──
+    // ── Invoice mutations (with error rollback) ──
     const addInvoice = useCallback(async (inv: Omit<Invoice, "id">) => {
         if (!workspaceId) return;
-        const created = await erpApi.createInvoice(workspaceId, inv);
-        setInvoices(prev => [created, ...prev]);
+        try {
+            const created = await erpApi.createInvoice(workspaceId, inv);
+            setInvoices(prev => [created, ...prev]);
+        } catch (err) {
+            console.error("Failed to create invoice", err);
+            throw err;
+        }
     }, [workspaceId]);
 
     const updateInvoiceStatus = useCallback(async (id: string, status: string) => {
+        const rollback = invoices.find(i => i.id === id);
         setInvoices(prev => prev.map(i => (i.id === id ? { ...i, status: status as Invoice["status"] } : i)));
-        await erpApi.updateInvoice(id, { status });
-    }, []);
+        try {
+            await erpApi.updateInvoice(id, { status });
+        } catch (err) {
+            console.error("Failed to update invoice status, rolling back", err);
+            if (rollback) setInvoices(prev => prev.map(i => (i.id === id ? rollback : i)));
+            throw err;
+        }
+    }, [invoices]);
 
     const removeInvoice = useCallback(async (id: string) => {
+        const rollback = invoices;
         setInvoices(prev => prev.filter(i => i.id !== id));
-        await erpApi.deleteInvoice(id);
-    }, []);
+        try {
+            await erpApi.deleteInvoice(id);
+        } catch (err) {
+            console.error("Failed to delete invoice, rolling back", err);
+            setInvoices(rollback);
+            throw err;
+        }
+    }, [invoices]);
 
-    // ── Contact mutations ──
+    // ── Contact mutations (with error rollback) ──
     const addContact = useCallback(async (contact: Omit<Contact, "id">) => {
         if (!workspaceId) return;
-        const created = await erpApi.createContact(workspaceId, contact);
-        setContacts(prev => [created, ...prev]);
+        try {
+            const created = await erpApi.createContact(workspaceId, contact);
+            setContacts(prev => [created, ...prev]);
+        } catch (err) {
+            console.error("Failed to create contact", err);
+            throw err;
+        }
     }, [workspaceId]);
 
     const removeContact = useCallback(async (id: string) => {
+        const rollback = contacts;
         setContacts(prev => prev.filter(c => c.id !== id));
-        await erpApi.deleteContact(id);
-    }, []);
+        try {
+            await erpApi.deleteContact(id);
+        } catch (err) {
+            console.error("Failed to delete contact, rolling back", err);
+            setContacts(rollback);
+            throw err;
+        }
+    }, [contacts]);
 
-    // ── Product mutations ──
+    // ── Product mutations (with error rollback) ──
     const addProduct = useCallback(async (product: Omit<Product, "id">) => {
         if (!workspaceId) return;
-        const created = await erpApi.createProduct(workspaceId, product);
-        setProducts(prev => [created, ...prev]);
+        try {
+            const created = await erpApi.createProduct(workspaceId, product);
+            setProducts(prev => [created, ...prev]);
+        } catch (err) {
+            console.error("Failed to create product", err);
+            throw err;
+        }
     }, [workspaceId]);
 
     const removeProduct = useCallback(async (id: string) => {
+        const rollback = products;
         setProducts(prev => prev.filter(p => p.id !== id));
-        await erpApi.deleteProduct(id);
-    }, []);
+        try {
+            await erpApi.deleteProduct(id);
+        } catch (err) {
+            console.error("Failed to delete product, rolling back", err);
+            setProducts(rollback);
+            throw err;
+        }
+    }, [products]);
 
     const addStockMovement = useCallback(async (productId: string, type: "in" | "out", qty: number, note: string) => {
         if (!workspaceId) return;
@@ -151,16 +194,19 @@ export function ERPProvider({ children }: { children: React.ReactNode }) {
         });
         setMovements(prev => [movement, ...prev]);
 
-        // Update product qty
-        const product = products.find(p => p.id === productId);
-        if (product) {
+        // Use functional setState to avoid stale closure on products
+        setProducts(prev => prev.map(p => {
+            if (p.id !== productId) return p;
             const newQty = type === "in"
-                ? product.currentQty + qty
-                : Math.max(0, product.currentQty - qty);
-            setProducts(prev => prev.map(p => (p.id === productId ? { ...p, currentQty: newQty } : p)));
-            await erpApi.updateProduct(productId, { currentQty: newQty });
-        }
-    }, [workspaceId, products]);
+                ? p.currentQty + qty
+                : Math.max(0, p.currentQty - qty);
+            // Fire async update (non-blocking)
+            erpApi.updateProduct(productId, { currentQty: newQty }).catch(err =>
+                console.error("Failed to update product qty", err)
+            );
+            return { ...p, currentQty: newQty };
+        }));
+    }, [workspaceId]);
 
     // ── Budget mutations ──
     const upsertBudgetFn = useCallback(async (year: number, category: ExpenseCategory, planned: number) => {

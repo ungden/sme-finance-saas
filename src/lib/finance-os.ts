@@ -59,9 +59,10 @@ export async function bulkUpdateAllocationRules(
     workspaceId: string,
     rules: { category: AllocationCategory; percent: number }[]
 ): Promise<void> {
-    for (const rule of rules) {
-        await upsertAllocationRule(workspaceId, rule.category, rule.percent);
-    }
+    // Batch upsert all rules in parallel instead of sequential
+    await Promise.all(
+        rules.map(rule => upsertAllocationRule(workspaceId, rule.category, rule.percent))
+    );
 }
 
 // ══════════════════════════════════════════════════
@@ -400,14 +401,27 @@ export async function bulkUpsertMonthlyTargets(
         notes: string;
     }[]
 ): Promise<void> {
-    // Delete existing targets for this plan and re-insert
-    await getSupabase().from("monthly_targets").delete().eq("plan_id", planId);
-
-    if (targets.length > 0) {
-        const rows = targets.map(t => ({ plan_id: planId, ...t }));
-        const { error } = await getSupabase().from("monthly_targets").insert(rows);
-        if (error) throw error;
+    if (targets.length === 0) {
+        // Only delete if explicitly clearing all targets
+        await getSupabase().from("monthly_targets").delete().eq("plan_id", planId);
+        return;
     }
+
+    // Use upsert with ON CONFLICT (plan_id, month) instead of delete+insert
+    const rows = targets.map(t => ({ plan_id: planId, ...t }));
+    const { error } = await getSupabase()
+        .from("monthly_targets")
+        .upsert(rows, { onConflict: "plan_id,month" });
+    if (error) throw error;
+
+    // Clean up months that are no longer in the targets list
+    const targetMonths = targets.map(t => t.month);
+    const { error: deleteError } = await getSupabase()
+        .from("monthly_targets")
+        .delete()
+        .eq("plan_id", planId)
+        .not("month", "in", `(${targetMonths.join(",")})`);
+    if (deleteError) throw deleteError;
 }
 
 export async function updateMonthlyTarget(

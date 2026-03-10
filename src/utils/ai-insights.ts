@@ -4,7 +4,34 @@ export interface InsightItem {
     message: string;
 }
 
-export function generateInsights(years: any[]): InsightItem[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface DerivedYear {
+    year: number;
+    revenue: number;
+    cogs: number;
+    operatingExpenses: number;
+    depreciation: number;
+    interestExpense: number;
+    taxes: number;
+    cash: number;
+    accountsReceivable: number;
+    inventory: number;
+    propertyPlantEquipment: number;
+    accountsPayable: number;
+    shortTermDebt: number;
+    longTermDebt: number;
+    ownerCapital: number;
+    _calculated: {
+        grossProfit: number;
+        netIncome: number;
+        currentAssets: number;
+        currentLiabilities: number;
+        netCashFlow: number;
+        opsCF: number;
+    };
+}
+
+export function generateInsights(years: DerivedYear[]): InsightItem[] {
     const insights: InsightItem[] = [];
 
     if (!years || years.length === 0) {
@@ -192,8 +219,9 @@ function linearRegression(points: { x: number; y: number }[]): { slope: number; 
     return { slope, intercept, r2 };
 }
 
-function forecastSeries(years: any[], field: string, periodsAhead: number = 3): ForecastPoint[] {
-    const points = years.map((y, i) => ({ x: i, y: y[field] || 0 }));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function forecastSeries(years: Record<string, any>[], field: string, periodsAhead: number = 3): ForecastPoint[] {
+    const points = years.map((y, i) => ({ x: i, y: (y[field] as number) || 0 }));
     const { slope, intercept, r2 } = linearRegression(points);
 
     // Standard error for confidence interval
@@ -232,7 +260,8 @@ function forecastSeries(years: any[], field: string, periodsAhead: number = 3): 
     return result;
 }
 
-export function generateForecast(years: any[]): ForecastResult {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function generateForecast(years: Record<string, any>[]): ForecastResult {
     if (!years || years.length < 2) {
         return {
             revenue: [], cogs: [], opex: [], netIncome: [],

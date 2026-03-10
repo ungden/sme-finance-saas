@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import type { Workspace, Branch, MemberRole, YearData, Employee, Facility } from "@/lib/types";
 import * as api from "@/lib/workspace";
 
@@ -110,15 +110,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }, [currentWorkspaceId]);
 
     // ── Debounced Save to Supabase ──
-    const saveBranch = useCallback(async (branchId: string, updates: Partial<Pick<Branch, "years_data" | "employees" | "facilities">>) => {
-        setIsSaving(true);
-        try {
-            await api.updateBranchData(branchId, updates);
-        } catch (err) {
-            console.error("Save failed", err);
-        } finally {
-            setIsSaving(false);
+    const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+    const pendingUpdatesRef = useRef<Record<string, Partial<Pick<Branch, "years_data" | "employees" | "facilities">>>>({});
+
+    const saveBranch = useCallback((branchId: string, updates: Partial<Pick<Branch, "years_data" | "employees" | "facilities">>) => {
+        // Merge with any pending updates for this branch
+        pendingUpdatesRef.current[branchId] = {
+            ...pendingUpdatesRef.current[branchId],
+            ...updates,
+        };
+
+        // Clear existing timer for this branch
+        if (saveTimerRef.current[branchId]) {
+            clearTimeout(saveTimerRef.current[branchId]);
         }
+
+        setIsSaving(true);
+
+        // Debounce: wait 600ms after last change before saving
+        saveTimerRef.current[branchId] = setTimeout(async () => {
+            const mergedUpdates = pendingUpdatesRef.current[branchId];
+            delete pendingUpdatesRef.current[branchId];
+            try {
+                await api.updateBranchData(branchId, mergedUpdates);
+            } catch (err) {
+                console.error("Save failed", err);
+            } finally {
+                setIsSaving(false);
+            }
+        }, 600);
     }, []);
 
     // ── Branch Data Mutations (mirror old FinanceContext API) ──

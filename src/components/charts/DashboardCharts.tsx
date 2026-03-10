@@ -6,7 +6,24 @@ import {
     ComposedChart, Line
 } from "recharts";
 
-export default function DashboardCharts({ yearsData }: { yearsData: any[] }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface DerivedYearData {
+    year: number;
+    revenue: number;
+    cogs: number;
+    operatingExpenses: number;
+    depreciation: number;
+    interestExpense: number;
+    _calculated: {
+        netIncome: number;
+        opsCF: number;
+        invCF: number;
+        finCF: number;
+        netCashFlow: number;
+    };
+}
+
+export default function DashboardCharts({ yearsData }: { yearsData: DerivedYearData[] }) {
     if (!yearsData || yearsData.length === 0) return null;
 
     // Formatting Tooltips

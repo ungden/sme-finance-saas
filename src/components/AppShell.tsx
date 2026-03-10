@@ -1,12 +1,67 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Landmark, LogOut, Loader2, Plus, FolderSync, GitBranch, FileText, Workflow, FileDown } from "lucide-react";
+import { LayoutDashboard, Landmark, LogOut, Loader2, Plus, FolderSync, GitBranch, FileText, Workflow, FileDown, X } from "lucide-react";
 import { useFinance } from "@/context/FinanceContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { createClient } from "@/utils/supabase/client";
+
+/* ── Inline Modal Component ── */
+function NameModal({ title, defaultValue, onConfirm, onCancel }: {
+    title: string;
+    defaultValue: string;
+    onConfirm: (name: string) => void;
+    onCancel: () => void;
+}) {
+    const [value, setValue] = useState(defaultValue);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+    }, []);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (value.trim()) onConfirm(value.trim());
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onCancel}>
+            <form
+                onSubmit={handleSubmit}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-sm mx-4 space-y-4"
+            >
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+                    <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="Nhập tên..."
+                    required
+                />
+                <div className="flex gap-2 justify-end">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">
+                        Hủy
+                    </button>
+                    <button type="submit" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition">
+                        Tạo
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
 
 /* ── ERP sub-paths (used for sidebar active highlight) ── */
 const ERP_PATHS = [
@@ -34,6 +89,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { isLoaded, projects, currentProjectId, switchProject, createProject } = useFinance();
     const ws = useWorkspace();
+    const [showBranchModal, setShowBranchModal] = useState(false);
+    const [showProjectModal, setShowProjectModal] = useState(false);
 
     const handleLogout = async () => {
         const supabase = createClient();
@@ -97,10 +154,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={async () => {
-                                        const name = prompt("Tên Chi nhánh mới:", `Chi nhánh ${ws.branches.length + 1}`);
-                                        if (name) await ws.createBranch(name);
-                                    }}
+                                    onClick={() => setShowBranchModal(true)}
                                     className="mt-2 w-full flex items-center justify-center space-x-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 py-2 rounded-lg transition-colors"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
@@ -129,10 +183,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => {
-                                        const name = prompt("Nhập tên Kế hoạch dự phóng mới:", `Phương án nhánh ${projects.length + 1}`);
-                                        if (name) createProject(name);
-                                    }}
+                                    onClick={() => setShowProjectModal(true)}
                                     className="mt-2 w-full flex items-center justify-center space-x-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 py-2 rounded-lg transition-colors"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
@@ -193,6 +244,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                 </main>
             </div>
+
+            {/* ── Modals ── */}
+            {showBranchModal && (
+                <NameModal
+                    title="Tạo Chi nhánh mới"
+                    defaultValue={`Chi nhánh ${ws.branches.length + 1}`}
+                    onConfirm={async (name) => {
+                        setShowBranchModal(false);
+                        await ws.createBranch(name);
+                    }}
+                    onCancel={() => setShowBranchModal(false)}
+                />
+            )}
+            {showProjectModal && (
+                <NameModal
+                    title="Tạo Kế hoạch mới"
+                    defaultValue={`Phương án nhánh ${projects.length + 1}`}
+                    onConfirm={(name) => {
+                        setShowProjectModal(false);
+                        createProject(name);
+                    }}
+                    onCancel={() => setShowProjectModal(false)}
+                />
+            )}
         </div>
     );
 }

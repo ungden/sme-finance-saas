@@ -1,52 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import type { YearData, Employee, Facility } from "@/lib/types";
+import { useWorkspace } from "./WorkspaceContext";
 
-// ── Types ──────────────────────────────────────────────
-
-export interface Employee {
-    id: string;
-    name: string;
-    role: string;
-    monthlySalary: number;
-    startDate: string; // YYYY-MM
-}
-
-export interface Facility {
-    id: string;
-    name: string;
-    monthlyRent: number;
-    fireSafetyValid: boolean;
-    contractEnd: string; // YYYY-MM
-}
-
-export interface YearData {
-    id: string; // Typically just the year as string
-    year: number;
-
-    // ── Income Statement (P&L) Inputs ──
-    revenue: number;
-    cogs: number; // Tùy chọn: Nhập số âm hoặc dương đều được, hệ thống sẽ tự normalize
-    operatingExpenses: number;
-    depreciation: number;
-    interestExpense: number;
-    taxes: number;
-
-    // ── Balance Sheet Inputs ──
-    // Assets
-    cash: number;
-    accountsReceivable: number;
-    inventory: number;
-    propertyPlantEquipment: number;
-
-    // Liabilities
-    accountsPayable: number;
-    shortTermDebt: number;
-    longTermDebt: number;
-
-    // Equity
-    ownerCapital: number;
-}
+// Re-export types for backward compatibility
+export type { YearData, Employee, Facility };
 
 export interface Project {
     id: string;
@@ -112,26 +71,126 @@ export function useFinance() {
 }
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
+    // ── Bridge to WorkspaceContext ──
+    // When a workspace branch is active, delegate data to WorkspaceContext
+    // so all pages that use useFinance() get cloud data transparently
+    const ws = useWorkspace();
+    const hasWorkspaceBranch = ws.currentBranch !== null;
+
     const [projects, setProjects] = useState<Project[]>([]);
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // Derived active years data
+    // ── Unified data source ──
+    // If workspace branch is active, use its data; otherwise use localStorage projects
     const yearsData = React.useMemo(() => {
+        if (hasWorkspaceBranch) return ws.yearsData;
         return projects.find(p => p.id === currentProjectId)?.yearsData || [];
-    }, [projects, currentProjectId]);
+    }, [hasWorkspaceBranch, ws.yearsData, projects, currentProjectId]);
 
     const employees = React.useMemo(() => {
+        if (hasWorkspaceBranch) return ws.employees;
         return projects.find(p => p.id === currentProjectId)?.employees || [];
-    }, [projects, currentProjectId]);
+    }, [hasWorkspaceBranch, ws.employees, projects, currentProjectId]);
 
     const facilities = React.useMemo(() => {
+        if (hasWorkspaceBranch) return ws.facilities;
         return projects.find(p => p.id === currentProjectId)?.facilities || [];
-    }, [projects, currentProjectId]);
+    }, [hasWorkspaceBranch, ws.facilities, projects, currentProjectId]);
 
-    // Internal hook to auto-sync HR & Facility costs to OPEX whenever they change,
-    // assuming uniform cost for simplicity across all years for MVP
+    const effectiveIsLoaded = hasWorkspaceBranch ? ws.isLoaded : isLoaded;
+
+    // ── Unified mutations ──
+    // Delegate to workspace when branch is active
+    const updateYearData = (year: number, field: keyof Omit<YearData, "id" | "year">, value: number) => {
+        if (hasWorkspaceBranch) {
+            ws.updateYearData(year, field, value);
+            return;
+        }
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                const newYearsData = p.yearsData.map(y =>
+                    y.year === year ? { ...y, [field]: value } : y
+                );
+                return { ...p, yearsData: newYearsData };
+            }
+            return p;
+        }));
+    };
+
+    const addYear = (year: number) => {
+        if (hasWorkspaceBranch) {
+            ws.addYear(year);
+            return;
+        }
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                if (p.yearsData.find(y => y.year === year)) return p;
+                const newYears = [...p.yearsData, createEmptyYear(year)].sort((a, b) => a.year - b.year);
+                return { ...p, yearsData: newYears };
+            }
+            return p;
+        }));
+    };
+
+    const addEmployee = (employee: Omit<Employee, "id">) => {
+        if (hasWorkspaceBranch) {
+            ws.addEmployee(employee);
+            return;
+        }
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                const newEmp = { ...employee, id: Date.now().toString() + Math.random().toString(36).slice(2) };
+                return { ...p, employees: [...(p.employees || []), newEmp] };
+            }
+            return p;
+        }));
+    };
+
+    const deleteEmployee = (id: string) => {
+        if (hasWorkspaceBranch) {
+            ws.deleteEmployee(id);
+            return;
+        }
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                return { ...p, employees: (p.employees || []).filter(e => e.id !== id) };
+            }
+            return p;
+        }));
+    };
+
+    const addFacility = (facility: Omit<Facility, "id">) => {
+        if (hasWorkspaceBranch) {
+            ws.addFacility(facility);
+            return;
+        }
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                const newFac = { ...facility, id: Date.now().toString() + Math.random().toString(36).slice(2) };
+                return { ...p, facilities: [...(p.facilities || []), newFac] };
+            }
+            return p;
+        }));
+    };
+
+    const deleteFacility = (id: string) => {
+        if (hasWorkspaceBranch) {
+            ws.deleteFacility(id);
+            return;
+        }
+        setProjects(prev => prev.map(p => {
+            if (p.id === currentProjectId) {
+                return { ...p, facilities: (p.facilities || []).filter(f => f.id !== id) };
+            }
+            return p;
+        }));
+    };
+
+    // Internal hook to auto-sync HR & Facility costs to OPEX whenever they change
     useEffect(() => {
+        // Only applies to localStorage mode (workspace handles its own sync)
+        if (hasWorkspaceBranch) return;
         if (!currentProjectId || !isLoaded) return;
 
         const proj = projects.find(p => p.id === currentProjectId);
@@ -143,7 +202,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         const extraMonthlyOpex = totalMonthlySalary + totalMonthlyRent;
         const extraAnnualOpex = extraMonthlyOpex * 12;
 
-        // Guard: Only update if the value actually changed to prevent infinite loop
         const currentOpex = proj.yearsData.length > 0 ? proj.yearsData[0].operatingExpenses : -1;
         const hasErpItems = ((proj.employees?.length || 0) + (proj.facilities?.length || 0)) > 0;
         if (!hasErpItems || currentOpex === extraAnnualOpex) return;
@@ -159,7 +217,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
             };
         }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [employees, facilities]);
+    }, [employees, facilities, hasWorkspaceBranch]);
 
     useEffect(() => {
         const savedProjects = localStorage.getItem("sme_finance_projects_v2");
@@ -175,7 +233,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
                     initialProjects = parsed;
                     initialCurrent = savedCurrent || parsed[0].id;
                 }
-            } catch (e) {
+            } catch {
                 // Ignore parse errors
             }
         }
@@ -203,71 +261,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("sme_finance_current_project_v2", currentProjectId);
         }
     }, [projects, currentProjectId, isLoaded]);
-
-    // ── Input Actions ──────────────────────────────
-    const updateYearData = (year: number, field: keyof Omit<YearData, "id" | "year">, value: number) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === currentProjectId) {
-                const newYearsData = p.yearsData.map(y =>
-                    y.year === year ? { ...y, [field]: value } : y
-                );
-                return { ...p, yearsData: newYearsData };
-            }
-            return p;
-        }));
-    };
-
-    const addYear = (year: number) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === currentProjectId) {
-                // Check if year already exists
-                if (p.yearsData.find(y => y.year === year)) return p;
-
-                const newYears = [...p.yearsData, createEmptyYear(year)].sort((a, b) => a.year - b.year);
-                return { ...p, yearsData: newYears };
-            }
-            return p;
-        }));
-    };
-
-    // ── ERP Actions ────────────────────────────────
-    const addEmployee = (employee: Omit<Employee, "id">) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === currentProjectId) {
-                const newEmp = { ...employee, id: Date.now().toString() + Math.random().toString(36).slice(2) };
-                return { ...p, employees: [...(p.employees || []), newEmp] };
-            }
-            return p;
-        }));
-    };
-
-    const deleteEmployee = (id: string) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === currentProjectId) {
-                return { ...p, employees: (p.employees || []).filter(e => e.id !== id) };
-            }
-            return p;
-        }));
-    };
-
-    const addFacility = (facility: Omit<Facility, "id">) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === currentProjectId) {
-                const newFac = { ...facility, id: Date.now().toString() + Math.random().toString(36).slice(2) };
-                return { ...p, facilities: [...(p.facilities || []), newFac] };
-            }
-            return p;
-        }));
-    };
-
-    const deleteFacility = (id: string) => {
-        setProjects(prev => prev.map(p => {
-            if (p.id === currentProjectId) {
-                return { ...p, facilities: (p.facilities || []).filter(f => f.id !== id) };
-            }
-            return p;
-        }));
-    };
 
     // ── Project Management Actions ─────────────────
     const createProject = (name: string, initialYears: YearData[] = DEFAULT_YEARS) => {
@@ -303,7 +296,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
     return (
         <FinanceContext.Provider value={{
-            projects, currentProjectId, yearsData, employees, facilities, isLoaded,
+            projects, currentProjectId, yearsData, employees, facilities,
+            isLoaded: effectiveIsLoaded,
             updateYearData, addYear, formatVND,
             createProject, switchProject, renameProject, deleteProject,
             addEmployee, deleteEmployee, addFacility, deleteFacility

@@ -406,7 +406,7 @@ export default function LandingHero() {
                     </div>
 
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[40px] p-12 text-center relative overflow-hidden shadow-2xl shadow-blue-900/50">
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                        <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{ backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 2px, transparent 2px, transparent 10px)" }}></div>
                         <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 relative z-10">Sẵn sàng scale-up doanh nghiệp?</h2>
                         <p className="text-blue-100 mb-10 text-lg relative z-10">Đăng ký tài khoản trong 30 giây. Hủy bất cứ lúc nào.</p>
                         <Link href="/login" className="inline-flex items-center gap-2 bg-white text-blue-900 px-10 py-5 rounded-full font-black text-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:scale-105 transition-all relative z-10">

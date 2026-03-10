@@ -78,7 +78,7 @@ export default function SankeyChart({
     if (sankeyNodes.length === 0) {
         return (
             <div className="flex items-center justify-center h-64 text-slate-400 text-sm">
-                Nhap doanh thu de xem bieu do dong tien
+                Nhập doanh thu để xem biểu đồ dòng tiền
             </div>
         );
     }

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { createClient } from "@/utils/supabase/server";
 
 const apiKey = process.env.GEMINI_API_KEY;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let ai: any = null;
 
 if (apiKey) {
@@ -10,6 +12,20 @@ if (apiKey) {
 
 export async function POST(request: NextRequest) {
     try {
+        // Auth check: ensure user is authenticated
+        try {
+            const supabase = await createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+        } catch (e: unknown) {
+            // If Supabase not configured, allow access (local dev)
+            if (!(e instanceof Error) || e.message !== "SUPABASE_NOT_CONFIGURED") {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+        }
+
         const formData = await request.formData();
         const file = formData.get("file") as File | null;
 
