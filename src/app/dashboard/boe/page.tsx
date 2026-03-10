@@ -7,6 +7,7 @@ import {
     Scissors, GraduationCap, Truck, Plus
 } from "lucide-react";
 import { useFinance, YearData } from "@/context/FinanceContext";
+import { INDUSTRY_TEMPLATES, type IndustryTemplate } from "@/lib/templates";
 
 // ── Exchange rate ──────────────────────────────────────
 
@@ -18,115 +19,18 @@ const MONTH_LABELS = [
     "T07", "T08", "T09", "T10", "T11", "T12",
 ];
 
-// ── Industry Template System ──────────────────────────
-interface BOETemplate {
-    id: string;
-    name: string;
-    description: string;
-    icon: React.ReactNode;
-    gradient: string;
-    tc: number;
-    ac: number;
-    sizeSqm: number;
-    rent: number;
-    cogsPercent: number;
-    utilitiesPercent: number;
-    marketingPercent: number;
-    otherOpexPercent: number;
-    maintenancePercent: number;
-    reinvestmentPercent: number;
-    smCount: number;
-    smSalary: number;
-    staffCount: number;
-    staffSalary: number;
-    capexSqm: number;
-    equipment: number;
-    depreciationYears: number;
-    // Labels customization
-    tcLabel: string;
-    acLabel: string;
-}
+// ── Icons for templates (React components can't live in lib) ──
+const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
+    fnb: <Coffee className="w-5 h-5" />,
+    retail: <Store className="w-5 h-5" />,
+    ecommerce: <ShoppingBag className="w-5 h-5" />,
+    salon: <Scissors className="w-5 h-5" />,
+    education: <GraduationCap className="w-5 h-5" />,
+    logistics: <Truck className="w-5 h-5" />,
+};
 
-const TEMPLATES: BOETemplate[] = [
-    {
-        id: "fnb",
-        name: "F&B / Quán Cà phê",
-        description: "Dựa theo BOE Nam Long — Quán cà phê & nhà hàng 500m²",
-        icon: <Coffee className="w-5 h-5" />,
-        gradient: "from-amber-500 to-orange-600",
-        tc: 189, ac: 71000, sizeSqm: 500, rent: 180960,
-        cogsPercent: 31, utilitiesPercent: 6, marketingPercent: 3,
-        otherOpexPercent: 1, maintenancePercent: 1, reinvestmentPercent: 1,
-        smCount: 1, smSalary: 12000000, staffCount: 8, staffSalary: 5500000,
-        capexSqm: 14300000, equipment: 520000000, depreciationYears: 5,
-        tcLabel: "TC (Giao dịch/ngày)", acLabel: "AC (Đơn giá TB, VNĐ)",
-    },
-    {
-        id: "retail",
-        name: "Bán lẻ / Cửa hàng",
-        description: "Cửa hàng thời trang, mỹ phẩm, tiện lợi — 80-200m²",
-        icon: <Store className="w-5 h-5" />,
-        gradient: "from-blue-500 to-indigo-600",
-        tc: 80, ac: 350000, sizeSqm: 120, rent: 390000,
-        cogsPercent: 55, utilitiesPercent: 3, marketingPercent: 5,
-        otherOpexPercent: 2, maintenancePercent: 1, reinvestmentPercent: 1,
-        smCount: 1, smSalary: 10000000, staffCount: 3, staffSalary: 6000000,
-        capexSqm: 7800000, equipment: 390000000, depreciationYears: 5,
-        tcLabel: "Khách/ngày", acLabel: "Giá trị đơn TB (VNĐ)",
-    },
-    {
-        id: "ecommerce",
-        name: "Thương mại Điện tử",
-        description: "Shop online Shopee/TikTok/Lazada — Kho hàng + nhân sự",
-        icon: <ShoppingBag className="w-5 h-5" />,
-        gradient: "from-rose-500 to-pink-600",
-        tc: 150, ac: 250000, sizeSqm: 80, rent: 104000,
-        cogsPercent: 50, utilitiesPercent: 1, marketingPercent: 15,
-        otherOpexPercent: 5, maintenancePercent: 0, reinvestmentPercent: 1,
-        smCount: 1, smSalary: 12000000, staffCount: 5, staffSalary: 6500000,
-        capexSqm: 1300000, equipment: 260000000, depreciationYears: 3,
-        tcLabel: "Đơn hàng/ngày", acLabel: "AOV (Giá trị đơn TB, VNĐ)",
-    },
-    {
-        id: "salon",
-        name: "Salon / Spa / Làm đẹp",
-        description: "Tiệm tóc, spa, nail — 60-150m², dịch vụ cao cấp",
-        icon: <Scissors className="w-5 h-5" />,
-        gradient: "from-purple-500 to-fuchsia-600",
-        tc: 25, ac: 450000, sizeSqm: 100, rent: 260000,
-        cogsPercent: 15, utilitiesPercent: 5, marketingPercent: 8,
-        otherOpexPercent: 2, maintenancePercent: 2, reinvestmentPercent: 1,
-        smCount: 1, smSalary: 12000000, staffCount: 6, staffSalary: 8000000,
-        capexSqm: 10400000, equipment: 650000000, depreciationYears: 5,
-        tcLabel: "Khách/ngày", acLabel: "Đơn giá dịch vụ TB (VNĐ)",
-    },
-    {
-        id: "education",
-        name: "Giáo dục / Trung tâm dạy học",
-        description: "Trung tâm ngoại ngữ, luyện thi, kỹ năng — 150-300m²",
-        icon: <GraduationCap className="w-5 h-5" />,
-        gradient: "from-emerald-500 to-teal-600",
-        tc: 60, ac: 200000, sizeSqm: 200, rent: 208000,
-        cogsPercent: 5, utilitiesPercent: 4, marketingPercent: 10,
-        otherOpexPercent: 3, maintenancePercent: 1, reinvestmentPercent: 1,
-        smCount: 1, smSalary: 15000000, staffCount: 8, staffSalary: 10000000,
-        capexSqm: 5200000, equipment: 390000000, depreciationYears: 5,
-        tcLabel: "Học viên/ngày", acLabel: "Học phí TB/buổi (VNĐ)",
-    },
-    {
-        id: "logistics",
-        name: "Vận chuyển / Giao hàng",
-        description: "Đội xe giao hàng, kho bãi, last-mile delivery",
-        icon: <Truck className="w-5 h-5" />,
-        gradient: "from-sky-500 to-cyan-600",
-        tc: 200, ac: 35000, sizeSqm: 150, rent: 78000,
-        cogsPercent: 40, utilitiesPercent: 8, marketingPercent: 3,
-        otherOpexPercent: 5, maintenancePercent: 5, reinvestmentPercent: 2,
-        smCount: 1, smSalary: 12000000, staffCount: 10, staffSalary: 7000000,
-        capexSqm: 1300000, equipment: 1300000000, depreciationYears: 4,
-        tcLabel: "Đơn giao/ngày", acLabel: "Phí giao hàng TB (VNĐ)",
-    },
-];
+// Alias for backward compat within this file
+const TEMPLATES = INDUSTRY_TEMPLATES;
 
 interface MonthlyPL {
     label: string;
@@ -171,7 +75,7 @@ export default function BOEPage() {
 
     const selectedTemplate = TEMPLATES.find(t => t.id === selectedId) || TEMPLATES[0];
 
-    const applyTemplate = (tmpl: BOETemplate) => {
+    const applyTemplate = (tmpl: IndustryTemplate) => {
         setSelectedId(tmpl.id);
         setTc(tmpl.tc); setAc(tmpl.ac); setSizeSqm(tmpl.sizeSqm); setRent(tmpl.rent);
         setCogsPercent(tmpl.cogsPercent); setUtilitiesPercent(tmpl.utilitiesPercent);
@@ -250,7 +154,7 @@ export default function BOEPage() {
                     >
                         <button onClick={() => applyTemplate(tmpl)} className="w-full text-left flex-1" title="Xem trước Template này">
                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tmpl.gradient} flex items-center justify-center text-white mb-3 shadow-sm`}>
-                                {tmpl.icon}
+                                {TEMPLATE_ICONS[tmpl.id]}
                             </div>
                             <h3 className={`text-sm font-bold mb-1 ${selectedId === tmpl.id ? "text-blue-800" : "text-slate-900"}`}>
                                 {tmpl.name}

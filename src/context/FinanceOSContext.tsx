@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useWorkspace } from "./WorkspaceContext";
 import * as api from "@/lib/finance-os";
+import { computeActualYearData } from "@/lib/actual-bridge";
+import type { YearData } from "@/lib/types";
 import type {
     AllocationRule,
     AllocationCategory,
@@ -48,6 +50,9 @@ interface FinanceOSContextType {
     totalAllocPercent: number;
     totalDeptPercent: number;
     totalChannelPercent: number;
+
+    // Actual YearData: derived from daily cashflow + allocation rules
+    actualYearData: YearData | null;
 
     // Cashflow computed
     cashflowSummary: {
@@ -329,6 +334,15 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
             cashRunway,
         };
     }, [dailyCashflow]);
+
+    // ── Computed: Actual YearData (from daily cashflow + allocation rules) ──
+    const actualYearData = useMemo<YearData | null>(() => {
+        if (dailyCashflow.length === 0) return null;
+        const currentYear = activePlan?.year || new Date().getFullYear();
+        // planYearData will be passed from FinanceContext via the dashboard
+        // For now, compute without plan reference (plan reference is handled in Dashboard)
+        return computeActualYearData(dailyCashflow, allocationRules, currentYear, null);
+    }, [dailyCashflow, allocationRules, activePlan]);
 
     // ── Computed: Plan vs Actual ──
     const planVsActual = useMemo<PlanVsActual[]>(() => {
@@ -706,6 +720,7 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
         dailyCashflow,
         isLoaded,
         isSaving,
+        actualYearData,
         monthlyRevenue,
         allocations,
         payrollPool,
@@ -755,7 +770,7 @@ export function FinanceOSProvider({ children }: { children: React.ReactNode }) {
         formatVND,
     }), [
         allocationRules, departments, employees, marketingChannels, dailyCashflow,
-        isLoaded, isSaving, monthlyRevenue, allocations, payrollPool, marketingPool,
+        isLoaded, isSaving, actualYearData, monthlyRevenue, allocations, payrollPool, marketingPool,
         departmentBudgets, channelBudgets, totalAllocPercent, totalDeptPercent, totalChannelPercent,
         cashflowSummary, revenueOverride,
         plans, activePlan, activePlanTargets, planVsActual, activePlanId,

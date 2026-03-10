@@ -7,6 +7,7 @@ import {
     Archive, TrendingUp, TrendingDown, Target, Calendar, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useFinanceOS } from "@/context/FinanceOSContext";
+import { useFinance } from "@/context/FinanceContext";
 import {
     Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ComposedChart, Line, Cell, Legend,
@@ -25,6 +26,7 @@ const STATUS_CONFIG: Record<PlanStatus, { label: string; color: string; icon: Re
 
 export default function AIPlannerPage() {
     const fos = useFinanceOS();
+    const { setPlanYearData } = useFinance();
     const {
         plans, activePlan, activePlanTargets, planVsActual,
         allocationRules, departments, marketingChannels,
@@ -80,7 +82,7 @@ export default function AIPlannerPage() {
         }
     };
 
-    // Save plan + targets to Supabase
+    // Save plan + targets to Supabase, and yearData to FinanceContext
     const handleSavePlan = async () => {
         if (!aiResult) return;
         setCreating(true);
@@ -94,6 +96,12 @@ export default function AIPlannerPage() {
                 ai_summary: aiResult.summary,
             });
             await fos.savePlanTargets(plan.id, aiResult.months);
+
+            // Save full YearData as Plan for Dashboard Plan vs Actual
+            if (aiResult.yearData) {
+                setPlanYearData(aiResult.yearData);
+            }
+
             setShowCreate(false);
             setAiResult(null);
             setForm({

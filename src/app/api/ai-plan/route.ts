@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/utils/supabase/server";
+import { deriveBalanceSheetFromPL } from "@/lib/templates";
 
 const apiKey = process.env.GEMINI_API_KEY;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,15 +89,46 @@ export async function POST(request: NextRequest) {
                 };
             });
 
+            // Derive full YearData from P&L totals
+            const totalCogs = months.reduce((s, m) => s + m.cogs, 0);
+            const totalMarketing = months.reduce((s, m) => s + m.marketing, 0);
+            const totalOps = months.reduce((s, m) => s + m.operations, 0);
+            const totalPayroll = months.reduce((s, m) => s + m.payroll, 0);
+            const totalOpex = totalMarketing + totalOps + totalPayroll;
+            // Estimate depreciation & interest from industry template or defaults
+            const depreciationEstimate = Math.round(annualRevenue * 0.03);
+            const interestEstimate = Math.round(annualRevenue * 0.01);
+            const ebt = annualRevenue - totalCogs - totalOpex - depreciationEstimate - interestEstimate;
+            const taxesEstimate = ebt > 0 ? Math.round(ebt * 0.20) : 0;
+
+            const balanceSheet = deriveBalanceSheetFromPL(
+                annualRevenue, totalCogs, totalOpex,
+                depreciationEstimate, interestEstimate, taxesEstimate,
+                industry || undefined,
+            );
+
+            const yearData = {
+                id: year.toString(),
+                year: year as number,
+                revenue: annualRevenue,
+                cogs: totalCogs,
+                operatingExpenses: totalOpex,
+                depreciation: depreciationEstimate,
+                interestExpense: interestEstimate,
+                taxes: taxesEstimate,
+                ...balanceSheet,
+            };
+
             return NextResponse.json({
                 months,
-                summary: `Ke hoach tai chinh ${year} voi doanh thu muc tieu ${(annualRevenue / 1e9).toFixed(1)} ty VND. Nganh ${industry || "kinh doanh chung"}. Phan bo: COGS ${cogsPercent}%, Marketing ${mktPercent}%, Operations ${opsPercent}%, Payroll ${payPercent}%, Profit ${profPercent}%. Du kien Q1 thap diem (70-85% binh quan), Q3 cao diem (110-120%), Q4 on dinh. Loi nhuan muc tieu ${profPercent}% doanh thu.`,
+                yearData,
+                summary: `Kế hoạch tài chính ${year} với doanh thu mục tiêu ${(annualRevenue / 1e9).toFixed(1)} tỷ VND. Ngành ${industry || "kinh doanh chung"}. Phân bổ: COGS ${cogsPercent}%, Marketing ${mktPercent}%, Operations ${opsPercent}%, Payroll ${payPercent}%, Profit ${profPercent}%. Dự kiến Q1 thấp điểm (70-85% bình quân), Q3 cao điểm (110-120%), Q4 ổn định. Lợi nhuận mục tiêu ${profPercent}% doanh thu.`,
                 insights: [
-                    `Doanh thu binh quan thang: ${(monthly / 1e6).toFixed(0)} trieu VND`,
-                    `Q1 (T1-T3) la mua thap diem - tap trung build nen tang, marketing nhe`,
-                    `Q3 (T7-T9) la mua cao diem - tang cuong marketing, tuyen them nhan su tam thoi`,
-                    `Payroll Pool ca nam: ${(annualRevenue * payPercent / 100 / 1e6).toFixed(0)} trieu - chia ${departments?.length || 0} phong ban`,
-                    `Can duy tri profit margin >= ${profPercent}% de dam bao suc khoe tai chinh`,
+                    `Doanh thu bình quân tháng: ${(monthly / 1e6).toFixed(0)} triệu VND`,
+                    `Q1 (T1-T3) là mùa thấp điểm - tập trung xây nền tảng, marketing nhẹ`,
+                    `Q3 (T7-T9) là mùa cao điểm - tăng cường marketing, tuyển thêm nhân sự tạm thời`,
+                    `Payroll Pool cả năm: ${(annualRevenue * payPercent / 100 / 1e6).toFixed(0)} triệu - chia ${departments?.length || 0} phòng ban`,
+                    `Cần duy trì profit margin >= ${profPercent}% để đảm bảo sức khỏe tài chính`,
                 ],
             });
         }
@@ -169,6 +201,37 @@ RANG BUOC:
 
         try {
             const parsed = JSON.parse(rawJson);
+
+            // Derive full YearData from AI's monthly breakdown
+            const aiMonths = parsed.months || [];
+            const aiTotalCogs = aiMonths.reduce((s: number, m: { cogs: number }) => s + m.cogs, 0);
+            const aiTotalMkt = aiMonths.reduce((s: number, m: { marketing: number }) => s + m.marketing, 0);
+            const aiTotalOps = aiMonths.reduce((s: number, m: { operations: number }) => s + m.operations, 0);
+            const aiTotalPayroll = aiMonths.reduce((s: number, m: { payroll: number }) => s + m.payroll, 0);
+            const aiTotalOpex = aiTotalMkt + aiTotalOps + aiTotalPayroll;
+            const aiDepreciation = Math.round(annualRevenue * 0.03);
+            const aiInterest = Math.round(annualRevenue * 0.01);
+            const aiEbt = annualRevenue - aiTotalCogs - aiTotalOpex - aiDepreciation - aiInterest;
+            const aiTaxes = aiEbt > 0 ? Math.round(aiEbt * 0.20) : 0;
+
+            const aiBalanceSheet = deriveBalanceSheetFromPL(
+                annualRevenue, aiTotalCogs, aiTotalOpex,
+                aiDepreciation, aiInterest, aiTaxes,
+                industry || undefined,
+            );
+
+            parsed.yearData = {
+                id: year.toString(),
+                year: year as number,
+                revenue: annualRevenue,
+                cogs: aiTotalCogs,
+                operatingExpenses: aiTotalOpex,
+                depreciation: aiDepreciation,
+                interestExpense: aiInterest,
+                taxes: aiTaxes,
+                ...aiBalanceSheet,
+            };
+
             return NextResponse.json(parsed);
         } catch {
             console.error("Failed to parse AI plan response:", aiText);
